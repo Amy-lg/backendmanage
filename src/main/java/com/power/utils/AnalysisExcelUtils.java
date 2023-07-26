@@ -30,121 +30,63 @@ public class AnalysisExcelUtils {
      */
     public static List<Exam> analysisExcel(MultipartFile uploadFile) {
 
-        // 先判断此文件后缀
-
-
-        List<Exam> list = new ArrayList<>();
-        Exam exam = null;
-        try {
-            // 获取Excel文件名
-            String fileName = uploadFile.getOriginalFilename();
-            // 判断文件格式是否正确
-            if (!fileName.matches("^.+\\.(?i)(xls)$") && !fileName.matches("^.+\\.(?i)(xlsx)$")) {
-                throw new Exception("上传文件格式不正确，请重新上传！");
-            }
-            // Excel版本判断
-            boolean isExcel2003 = true;
-            if (fileName.matches("^.+\\.(?i)(xlsx)$")) {
-                isExcel2003 = false;
-            }
-            Workbook workbook = null;
-            InputStream is = null;
-            try {
-                is = uploadFile.getInputStream();
-                if (isExcel2003) {
-                    workbook = new HSSFWorkbook(is);
-                }else {
-                    workbook = new XSSFWorkbook(is);
+        if (!uploadFile.isEmpty()) {
+            // 判断此文件后缀
+            String filename = uploadFile.getOriginalFilename();
+            // 如果是word文档，则进行转换
+            if (filename.matches("^.+\\.(?i)(docx)$") || filename.matches("^.+\\.(?i)(doc)$")) {
+                // Word版本判断
+                boolean isWord2003 = true;
+                if (filename.matches("^.+\\.(?i)(docx)$")) {
+                    isWord2003 =false;
                 }
-            } catch (IOException e) {
+                String cachePath = "./src/main/resources/cache";
+                String cacheAbsolutePath = new File(cachePath).getAbsolutePath();
+                try {
+                    String fullFilePathName = cacheAbsolutePath + "/" + filename;
+                    // 将需要转换的word文件保存在此项目中，以便转换时获取绝对路径
+                    uploadFile.transferTo(new File(fullFilePathName));
+                    Workbook workbook = convertWordToExcel(fullFilePathName, isWord2003);
+                    List<Exam> examList = excelDataHandle(workbook);
+                    return examList;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else if (filename.matches("^.+\\.(?i)(xlsx)$") || filename.matches("^.+\\.(?i)(xls)$")){
+                // Excel版本判断
+                boolean isExcel2003 = true;
+                if (filename.matches("^.+\\.(?i)(xlsx)$")) {
+                    isExcel2003 = false;
+                }
+                Workbook workbook = null;
+                InputStream is = null;
+                try {
+                    is = uploadFile.getInputStream();
+                    if (isExcel2003) {
+                        workbook = new HSSFWorkbook(is);
+                    }else {
+                        workbook = new XSSFWorkbook(is);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                List<Exam> examList = excelDataHandle(workbook);
+                return examList;
+            } else {
+                try {
+                    throw new Exception("上传文件格式不正确，请重新上传！");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }else {
+            try {
+                throw new Exception("上传文件不能为空！");
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-            // 获取第一个sheet
-            Sheet sheet = workbook.getSheetAt(0);
-
-            if (sheet != null) {
-                for (int rowNum = 0; rowNum <= sheet.getLastRowNum(); rowNum++) {
-                    Row questionRow = sheet.getRow(rowNum);
-                    if (questionRow == null) {
-                        continue;
-                    }
-                    exam = new Exam();
-
-                    Cell queContentCol = questionRow.getCell(0);
-//                    CellType cellType = queContentCol.getCellType();
-                    if (queContentCol == null) {
-                        // 报异常信息：导入失败，订单金额格式不正确
-                        throw new RuntimeException("导入失败，题目导入类型不正确！");
-                    }else {
-                        exam.setQuestion(queContentCol.getStringCellValue());
-                        rowNum += 1;
-                    }
-
-                    Row optionsARow = sheet.getRow(rowNum);
-                    Cell optionsACol = optionsARow.getCell(0);
-                    if (optionsACol == null) {
-                        // 报异常信息：导入失败
-                        throw new RuntimeException("导入失败，选项导入类型不正确！");
-                    }else {
-                        exam.setOptionsA(optionsACol.getStringCellValue());
-                        rowNum += 1;
-                    }
-
-                    Row optionsBRow = sheet.getRow(rowNum);
-                    Cell optionsBCol = optionsBRow.getCell(0);
-                    if (optionsBCol == null) {
-                        // 报异常信息：导入失败
-                        throw new RuntimeException("导入失败，选项导入类型不正确！");
-                    }else {
-                        exam.setOptionsB(optionsBCol.getStringCellValue());
-                        rowNum += 1;
-                    }
-
-                    Row optionsCRow = sheet.getRow(rowNum);
-                    Cell optionsCCol = optionsCRow.getCell(0);
-                    if (optionsCCol == null) {
-                        // 报异常信息：导入失败
-                        throw new RuntimeException("导入失败，选项导入类型不正确！");
-                    }else {
-                        exam.setOptionsC(optionsCCol.getStringCellValue());
-                        rowNum += 1;
-                    }
-
-                    Row optionsDRow = sheet.getRow(rowNum);
-                    Cell optionsDCol = optionsDRow.getCell(0);
-                    if (optionsDCol == null) {
-                        // 报异常信息：导入失败
-                        throw new RuntimeException("导入失败，选项导入类型不正确！");
-                    }else {
-                        exam.setOptionsD(optionsDCol.getStringCellValue());
-                        rowNum += 1;
-                    }
-
-                    Row answerRow = sheet.getRow(rowNum);
-                    Cell answerCol = answerRow.getCell(0);
-                    if (answerCol == null) {
-                        // 报异常信息：导入失败
-                        throw new RuntimeException("导入失败，答案导入类型不正确！");
-                    }else {
-                        exam.setAnswer(answerCol.getStringCellValue());
-                    }
-
-                    // 题目类型
-//                    Cell queTypeCol = row.getCell(7);
-//                    if (queTypeCol != null) {
-//                        exam.setQuestionType(queTypeCol.getCellType() + 1);
-//                    }else {
-//                        exam.setQuestionType(0);
-//                    }
-
-                    // 将导入数据添加到集合
-                    list.add(exam);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-        return list;
+        return null;
     }
 
 
@@ -152,10 +94,9 @@ public class AnalysisExcelUtils {
      * Word转Excel
      * @param fileName
      */
-    public static void convertWordToExcel(String fileName) {
+    private static Workbook convertWordToExcel(String fileName, boolean isWord2003) {
         File file = new File(fileName);
         FileInputStream fis = null;
-        FileOutputStream fos = null;
         XWPFDocument docx = null;
         Workbook excelXlsx = null;
         try {
@@ -175,17 +116,12 @@ public class AnalysisExcelUtils {
                 XSSFCell cell = excelRow.createCell(0);
                 cell.setCellValue(paragraphText);
             });
-            // 将文件导出
-            String convertFileName = "word转excel";
-            fos = new FileOutputStream("D:\\" + convertFileName + ".xlsx");
-            excelXlsx.write(fos);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (fis != null || fos != null) {
+            if (fis != null) {
                 try {
                     fis.close();
-                    fos.close();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -198,5 +134,90 @@ public class AnalysisExcelUtils {
                 }
             }
         }
+        return excelXlsx;
+    }
+
+
+    /**
+     * Excel数据处理
+     * @param workbook
+     * @return
+     */
+    private static List<Exam> excelDataHandle(Workbook workbook) {
+
+        List<Exam> list = new ArrayList<>();
+        Exam exam = null;
+        Sheet sheet = workbook.getSheetAt(0);
+        if (sheet != null) {
+            for (int rowNum = 0; rowNum <= sheet.getLastRowNum(); rowNum++) {
+                Row questionRow = sheet.getRow(rowNum);
+                if (questionRow == null) {
+                    continue;
+                }
+                exam = new Exam();
+
+                Cell queContentCol = questionRow.getCell(0);
+//                    CellType cellType = queContentCol.getCellType();
+                if (queContentCol == null) {
+                    // 报异常信息：导入失败，订单金额格式不正确
+                    throw new RuntimeException("导入失败，题目导入类型不正确！");
+                }else {
+                    exam.setQuestion(queContentCol.getStringCellValue());
+                    rowNum += 1;
+                }
+
+                Row optionsARow = sheet.getRow(rowNum);
+                Cell optionsACol = optionsARow.getCell(0);
+                if (optionsACol == null) {
+                    // 报异常信息：导入失败
+                    throw new RuntimeException("导入失败，选项导入类型不正确！");
+                }else {
+                    exam.setOptionsA(optionsACol.getStringCellValue());
+                    rowNum += 1;
+                }
+
+                Row optionsBRow = sheet.getRow(rowNum);
+                Cell optionsBCol = optionsBRow.getCell(0);
+                if (optionsBCol == null) {
+                    // 报异常信息：导入失败
+                    throw new RuntimeException("导入失败，选项导入类型不正确！");
+                }else {
+                    exam.setOptionsB(optionsBCol.getStringCellValue());
+                    rowNum += 1;
+                }
+
+                Row optionsCRow = sheet.getRow(rowNum);
+                Cell optionsCCol = optionsCRow.getCell(0);
+                if (optionsCCol == null) {
+                    // 报异常信息：导入失败
+                    throw new RuntimeException("导入失败，选项导入类型不正确！");
+                }else {
+                    exam.setOptionsC(optionsCCol.getStringCellValue());
+                    rowNum += 1;
+                }
+
+                Row optionsDRow = sheet.getRow(rowNum);
+                Cell optionsDCol = optionsDRow.getCell(0);
+                if (optionsDCol == null) {
+                    // 报异常信息：导入失败
+                    throw new RuntimeException("导入失败，选项导入类型不正确！");
+                }else {
+                    exam.setOptionsD(optionsDCol.getStringCellValue());
+                    rowNum += 1;
+                }
+
+                Row answerRow = sheet.getRow(rowNum);
+                Cell answerCol = answerRow.getCell(0);
+                if (answerCol == null) {
+                    // 报异常信息：导入失败
+                    throw new RuntimeException("导入失败，答案导入类型不正确！");
+                }else {
+                    exam.setAnswer(answerCol.getStringCellValue());
+                }
+                // 将导入数据添加到集合
+                list.add(exam);
+            }
+        }
+        return list;
     }
 }
