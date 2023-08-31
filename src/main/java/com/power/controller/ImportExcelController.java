@@ -56,29 +56,6 @@ public class ImportExcelController {
         return excelContentMap;
     }
 
-    // 模糊查询
-    /*@GetMapping("/selAnswer")
-    public Map<String, Object> selAnswerByLike(@RequestParam(value = "question", defaultValue = "") String quesText,
-                                               @RequestParam(value = "optionsA", defaultValue = "") String optionsA,
-                                               @RequestParam(value = "optionsB", defaultValue = "") String optionsB,
-                                               @RequestParam(value = "optionsC", defaultValue = "") String optionsC) {
-
-        Map<String, Object> examMap = new HashMap<String, Object>();
-        // 进行模糊查询前 字符串拼接
-        *//*if () {
-
-        }*//*
-        List<Exam> exams = excelMapper.selAnswerByLike(quesText,optionsA,optionsB,optionsC);
-        if (exams.isEmpty() || exams.size() == 0) {
-            examMap.put("status", 0);
-            examMap.put("msg", "查询结果不存在！");
-            return examMap;
-        }
-        examMap.put("status", 1);
-        examMap.put("data", exams);
-        return examMap;
-    }*/
-
     // 多条件模糊查询
     @GetMapping("/selAnswer")
     public IPage<Exam> selAnswerByLike(@RequestParam Integer pageNum,

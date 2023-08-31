@@ -25,7 +25,12 @@ public class MybatisPlusConfig {
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
-        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+
+        // 添加分页过滤器，如果mybatisPlus需要使用分页，boot必须添加这个配置
+        PaginationInnerInterceptor paginationInnerInterceptor =  new PaginationInnerInterceptor(DbType.MYSQL);
+        // 溢出总页数后是否进行处理(分页查询超过最大页码 显示第一页)
+        paginationInnerInterceptor.setOverflow(true);
+        interceptor.addInnerInterceptor(paginationInnerInterceptor);
         return interceptor;
     }
 

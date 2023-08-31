@@ -197,13 +197,18 @@ public class AnalysisExcelUtils {
                 }
 
                 Row optionsDRow = sheet.getRow(rowNum);
-                Cell optionsDCol = optionsDRow.getCell(0);
-                if (optionsDCol == null) {
-                    // 报异常信息：导入失败
-                    throw new RuntimeException("导入失败，选项导入类型不正确！");
-                }else {
-                    exam.setOptionsD(optionsDCol.getStringCellValue());
+                if (optionsDRow == null) {
+                    exam.setOptionsD(" ");
                     rowNum += 1;
+                } else {
+                    Cell optionsDCol = optionsDRow.getCell(0);
+                    if (optionsDCol == null) {
+                        // 报异常信息：导入失败
+                        throw new RuntimeException("导入失败，选项导入类型不正确！");
+                    }else {
+                        exam.setOptionsD(optionsDCol.getStringCellValue());
+                        rowNum += 1;
+                    }
                 }
 
                 Row answerRow = sheet.getRow(rowNum);

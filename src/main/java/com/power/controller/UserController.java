@@ -1,15 +1,20 @@
 package com.power.controller;
 
-import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.power.common.Result;
+import com.power.common.constant.ResultStatusCode;
 import com.power.entity.User;
+import com.power.entity.dto.UserDTO;
 import com.power.mapper.UserMapper;
 import com.power.service.UserService;
+import com.power.utils.ResultUtils;
+import com.power.utils.TokenUtils;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.List;
 
@@ -31,6 +35,22 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    // 用户登录
+    @PostMapping("/login")
+    public Result userLogin(@RequestBody UserDTO userDTO) {
+        String username = userDTO.getUsername();
+        String password = userDTO.getPassword();
+        if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
+            return ResultUtils.error(ResultStatusCode.ERROR_USER_001, "用户名或密码不能为空");
+        }
+        UserDTO loginUser = userService.userLogin(userDTO);
+        if (loginUser.getUsername() != null && loginUser.getPassword() != null) {
+            return ResultUtils.success(loginUser);
+        } else {
+            return ResultUtils.error(ResultStatusCode.EXCEPTION_USER_1001, "用户信息不存在");
+        }
+    }
 
     // 查询所有用户
     @GetMapping
