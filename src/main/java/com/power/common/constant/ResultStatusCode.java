@@ -25,6 +25,8 @@ public enum ResultStatusCode {
 
 
     EXCEPTION_USER_1001(1001, "用户信息不存在，请重新输入"),
+
+    ERROR_IMPORT(5001, "数据信息导入失败")
     ;
 
 

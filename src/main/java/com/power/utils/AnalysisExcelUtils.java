@@ -1,6 +1,8 @@
 package com.power.utils;
 
 import com.power.entity.Exam;
+import com.power.entity.fileentity.BusinessOrderEntity;
+import com.power.exception.ServiceException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -10,8 +12,8 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.*;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -89,6 +91,43 @@ public class AnalysisExcelUtils {
         return null;
     }
 
+    /**
+     * 业务工单Excel解析
+     * @param orderFile
+     * @return
+     */
+    public static List<BusinessOrderEntity> analysisBusinessOrderExcel(MultipartFile orderFile) {
+
+        if (!orderFile.isEmpty()) {
+            String filename = orderFile.getOriginalFilename();
+            // 判断导入文件是否为Excel
+            if (filename.matches("^.+\\.(?i)(xlsx)$") || filename.matches("^.+\\.(?i)(xls)$")) {
+                // 如果是Excel，判断版本
+                boolean isExcel2003 = true;
+                if (filename.matches("^.+\\.(?i)(xlsx)$")) {
+                    isExcel2003 = false;
+                }
+                Workbook workbook = null;
+                InputStream is = null;
+                try {
+                    is = orderFile.getInputStream();
+                    if (isExcel2003) {
+                        workbook = new HSSFWorkbook(is);
+                    } else {
+                        workbook = new XSSFWorkbook(is);
+                    }
+                    List<BusinessOrderEntity> orderEntityList = businessOrderHandle(workbook);
+                    return orderEntityList;
+                } catch (IOException e) {
+                    throw new ServiceException(5002, "文件处理异常");
+                }
+            }
+            // 导入文件类型错误返回null
+            return null;
+        }
+        return null;
+    }
+
 
     /**
      * Word转Excel
@@ -138,6 +177,93 @@ public class AnalysisExcelUtils {
     }
 
 
+    private static List<BusinessOrderEntity> businessOrderHandle(Workbook workbook) {
+
+        List<BusinessOrderEntity> businessOrderList = new ArrayList<>();
+        BusinessOrderEntity businessOrder;
+        if (workbook != null) {
+            // 循环遍历workbook中sheet（sheet≥1）
+            int numberOfSheets = workbook.getNumberOfSheets();
+            for (int i = 0; i < numberOfSheets; i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                if (sheet != null) {
+
+                    // 这里获取一下excel中每列数据的标题，存储一下
+                    List<String> dataTitle = new ArrayList<>();
+                    Row titleRow = sheet.getRow(0);
+                    for (int j = 0; j < titleRow.getLastCellNum(); j++) {
+                        Cell cell = titleRow.getCell(j);
+                        String cellValue = cell.getStringCellValue();
+                        dataTitle.add(cellValue);
+                    }
+
+                    // 获取数据总行数
+                    int rowNum = sheet.getLastRowNum();
+                    // 第一行为标题，从第二行开始为数据
+                    for (int j = 1; j < rowNum; j++) {
+                        Row row = sheet.getRow(j);
+                        if (row == null && rowNum != 0) {
+                            continue;
+                        }
+                        businessOrder = new BusinessOrderEntity();
+                        Iterator<Cell> cellIterator = row.iterator();
+                        int titleLoop = 0;
+                        while (cellIterator.hasNext()) {
+                            Cell nextCell = cellIterator.next();
+//                            switch (((Map.ValueIterator) cellIterator).next.key) {
+                            switch (titleLoop) {
+                                case 0:
+                                    String orderNum = nextCell.getStringCellValue();
+                                    businessOrder.setOrderNum(orderNum);
+                                    titleLoop += 1;
+                                    break;
+                                case 1:
+                                    String county = nextCell.getStringCellValue();
+                                    businessOrder.setCounty(county);
+                                    titleLoop += 1;
+                                    break;
+                                case 2:
+                                    String faultyTime = nextCell.getStringCellValue();
+                                    businessOrder.setFaultyTime(faultyTime);
+                                    titleLoop += 1;
+                                    break;
+                                case 3:
+                                    String faultyEquipmentType = nextCell.getStringCellValue();
+                                    businessOrder.setFaultyEquipmentType(faultyEquipmentType);
+                                    titleLoop += 1;
+                                    break;
+                                case 4:
+                                    String networkEleName = nextCell.getStringCellValue();
+                                    businessOrder.setNetworkElementName(networkEleName);
+                                    titleLoop += 1;
+                                    break;
+                                case 5:
+                                    // 这里需要获取一下单元格中的文本格式是String类型还是数字类型（这里先用String）
+                                    String faultyDuration = nextCell.getStringCellValue();
+                                    businessOrder.setFaultyDuration(faultyDuration);
+                                    titleLoop += 1;
+                                    break;
+                                case 6:
+                                    String faultyCauseCategory = nextCell.getStringCellValue();
+                                    businessOrder.setFaultyCauseCategory(faultyCauseCategory);
+                                    titleLoop += 1;
+                                    break;
+                                default:
+                                    String faultyTitle = nextCell.getStringCellValue();
+                                    businessOrder.setFaultyTitle(faultyTitle);
+                                    break;
+                            }
+                        }
+                        businessOrderList.add(businessOrder);
+                    }
+                    return businessOrderList;
+                }
+                // 防止第一个sheet为空，继续遍历后面的sheet
+                continue;
+            }
+        }
+        return null;
+    }
     /**
      * Excel数据处理
      * @param workbook

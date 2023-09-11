@@ -1,14 +1,19 @@
 package com.power.service;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.injector.methods.SelectPage;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.entity.BasicInfo;
+import com.power.entity.query.FilterModelQuery;
 import com.power.mapper.BasicInfoMapper;
 import org.apache.commons.compress.utils.Lists;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -101,5 +106,56 @@ public class BasicInfoService extends ServiceImpl<BasicInfoMapper, BasicInfo> {
         IPage<BasicInfo> basicInfoIPage = this.page(countyPage, basicInfoWrapper);
 //        basicInfoIPage.setRecords(list(basicInfoWrapper));
         return basicInfoIPage;
+    }
+
+    /**
+     * 筛选功能
+     * @param filterModelQuery 筛选model
+     * @return
+     */
+    public IPage<BasicInfo> filterByCondition(FilterModelQuery filterModelQuery) {
+
+        // 获取当前页码和此页中显示的信息条数
+        Integer pageNum = filterModelQuery.getPageNum();
+        Integer pageSize = filterModelQuery.getPageSize();
+        IPage<BasicInfo> basicInfoIPage = new Page<>(pageNum, pageSize);
+
+        QueryWrapper<BasicInfo> queryWrapper = new QueryWrapper<BasicInfo>();
+        if (!StrUtil.isEmpty(filterModelQuery.getProjectNum())) {
+            queryWrapper.eq("project_num", filterModelQuery.getProjectNum());
+        }
+        if (!StrUtil.isEmpty(filterModelQuery.getIctNum())) {
+            queryWrapper.eq("ict_num", filterModelQuery.getIctNum());
+        }
+//        !"".equals(filterModelQuery.getCounty())
+        if (!StrUtil.isEmpty(filterModelQuery.getCounty())) {
+            queryWrapper.eq("county", filterModelQuery.getCounty());
+        }
+        if (!StrUtil.isEmpty(filterModelQuery.getProjectName())) {
+            queryWrapper.eq("project_name", filterModelQuery.getProjectName());
+        }
+        if (!StrUtil.isEmpty(filterModelQuery.getConstructionMethod())) {
+            queryWrapper.eq("construction_method", filterModelQuery.getConstructionMethod());
+        }
+//        Integer transferStatus = filterModelQuery.getTransferStatus();
+//        if (transferStatus != null) {
+//            queryWrapper.eq("transfer_status", filterModelQuery.getTransferStatus());
+//        }
+        // 项目状态
+        if (!StrUtil.isEmpty(filterModelQuery.getProjectStatus())) {
+            queryWrapper.eq("project_status", filterModelQuery.getProjectStatus());
+        }
+        if (!StrUtil.isEmpty(filterModelQuery.getIntegratedTietong())) {
+            queryWrapper.eq("integrated_tietong", filterModelQuery.getIntegratedTietong());
+        }
+        // 判断是否有条件加入
+//        if (queryWrapper.getExpression().getNormal().size() == 0) {
+//            List<BasicInfo> basicInfos = this.list();
+//            basicInfoIPage.setRecords(basicInfos);
+//            basicInfoIPage.setTotal(basicInfos.size());
+//            return basicInfoIPage;
+//        }
+        IPage<BasicInfo> page = this.page(basicInfoIPage, queryWrapper);
+        return page;
     }
 }

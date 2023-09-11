@@ -14,7 +14,6 @@ import com.power.entity.dto.UserDTO;
 import com.power.mapper.UserMapper;
 import com.power.service.UserService;
 import com.power.utils.ResultUtils;
-import com.power.utils.TokenUtils;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +26,7 @@ import java.net.URLEncoder;
 import java.util.List;
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/user")
 public class UserController {
 
     @Autowired
@@ -38,6 +37,7 @@ public class UserController {
 
     // 用户登录
     @PostMapping("/login")
+    @CrossOrigin
     public Result userLogin(@RequestBody UserDTO userDTO) {
         String username = userDTO.getUsername();
         String password = userDTO.getPassword();

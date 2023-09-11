@@ -1,17 +1,12 @@
 package com.power.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
+import com.power.entity.query.FilterModelQuery;
 import com.power.service.BasicInfoService;
 import com.power.utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -21,7 +16,7 @@ import java.util.Map;
  * @author cyk
  */
 @RestController
-@RequestMapping("/basicInfo")
+@RequestMapping("/api/basicInfo")
 public class BasicInfoController {
 
     @Autowired
@@ -57,6 +52,23 @@ public class BasicInfoController {
         if (StringUtils.hasLength(countyName) && !countyName.isEmpty()) {
             return ResultUtils.success(basicInfoService.getCountiesDetail(pageNum, pageSize, countyName));
         } else {
+            return ResultUtils.success();
+        }
+    }
+
+    /**
+     * 筛选功能
+     * @param filterModelQuery 筛选model
+     * @return
+     */
+    @PostMapping("/filter")
+    public Result filterByCondition(@RequestBody FilterModelQuery filterModelQuery) {
+
+        // 判断请求体是否为空
+        if (filterModelQuery != null) {
+            return ResultUtils.success(basicInfoService.filterByCondition(filterModelQuery));
+        } else {
+            // 返回空数据
             return ResultUtils.success();
         }
     }
