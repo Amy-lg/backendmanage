@@ -2,6 +2,7 @@ package com.power.utils;
 
 import com.power.entity.Exam;
 import com.power.entity.fileentity.BusinessOrderEntity;
+import com.power.entity.fileentity.TOrderEntity;
 import com.power.exception.ServiceException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -12,7 +13,6 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.math.BigDecimal;
 import java.util.*;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -130,6 +130,43 @@ public class AnalysisExcelUtils {
 
 
     /**
+     * 小T工单Excel解析
+     * @param tOrderFile
+     * @return
+     */
+    public static List<TOrderEntity> analysisTOrderExcel(MultipartFile tOrderFile) {
+
+        if (!tOrderFile.isEmpty()) {
+            String filename = tOrderFile.getOriginalFilename();
+            // 判断导入文件是否为Excel
+            if (filename.matches("^.+\\.(?i)(xlsx)$") || filename.matches("^.+\\.(?i)(xls)$")) {
+                // 如果是Excel，判断版本
+                boolean isExcel2003 = true;
+                if (filename.matches("^.+\\.(?i)(xlsx)$")) {
+                    isExcel2003 = false;
+                }
+                Workbook workbook = null;
+                InputStream is = null;
+                try {
+                    is = tOrderFile.getInputStream();
+                    if (isExcel2003) {
+                        workbook = new HSSFWorkbook(is);
+                    } else {
+                        workbook = new XSSFWorkbook(is);
+                    }
+                    List<TOrderEntity> tOrderEntities = tOrderHandle(workbook);
+                    return tOrderEntities;
+                } catch (IOException e) {
+                    throw new ServiceException(5002, "文件处理异常");
+                }
+            }
+            // 导入文件类型错误返回null
+            return null;
+        }
+        return null;
+    }
+
+    /**
      * Word转Excel
      * @param fileName
      */
@@ -177,6 +214,86 @@ public class AnalysisExcelUtils {
     }
 
 
+    /**
+     * 小T工单Excel解析
+     * @param workbook
+     * @return
+     */
+    private static List<TOrderEntity> tOrderHandle(Workbook workbook) {
+        List<TOrderEntity> tOrderList = new ArrayList<>();
+        TOrderEntity tOrderEntity;
+
+        // 这里需要封装成一个通用解析Excel的方法（减少代码冗余。之后再做！！）
+        // todo
+        if (workbook != null) {
+            int numberOfSheets = workbook.getNumberOfSheets();
+            for (int i = 0; i < numberOfSheets; i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                if (sheet != null) {
+                    // 这里获取一下excel中每列数据的标题，存储一下
+                    List<String> dataTitle = new ArrayList<>();
+                    Row titleRow = sheet.getRow(0);
+                    for (int j = 0; j < titleRow.getLastCellNum(); j++) {
+                        Cell cell = titleRow.getCell(j);
+                        String cellValue = cell.getStringCellValue();
+                        dataTitle.add(cellValue);
+                    }
+                    // 获取数据总行数
+                    int rowNum = sheet.getLastRowNum();
+                    // 第一行为标题，从第二行开始为数据
+                    for (int j = 1; j < rowNum; j++) {
+                        Row row = sheet.getRow(j);
+                        if (row == null) {
+                            continue;
+                        }
+                        tOrderEntity = new TOrderEntity();
+                        Iterator<Cell> cellIterator = row.iterator();
+                        int titleLoop = 0;
+                        while (cellIterator.hasNext()) {
+                            Cell nextCell = cellIterator.next();
+                            switch (titleLoop) {
+                                case 0:
+                                    String orderNum = nextCell.getStringCellValue();
+                                    tOrderEntity.setOrderNum(orderNum);
+                                    titleLoop += 1;
+                                    break;
+                                case 1:
+                                    String orderTheme = nextCell.getStringCellValue();
+                                    tOrderEntity.setOrderTheme(orderTheme);
+                                    titleLoop += 1;
+                                    break;
+                                case 2:
+                                    String projectNum = nextCell.getStringCellValue();
+                                    tOrderEntity.setProjectNum(projectNum);
+                                    titleLoop += 1;
+                                    break;
+                                case 3:
+                                    String dispatchOrderTime = nextCell.getStringCellValue();
+                                    tOrderEntity.setDispatchOrderTime(dispatchOrderTime);
+                                    titleLoop += 1;
+                                    break;
+                                default:
+                                    String orderDuration = nextCell.getStringCellValue();
+                                    tOrderEntity.setOrderDuration(orderDuration);
+                                    break;
+                            }
+                        }
+                        tOrderList.add(tOrderEntity);
+                    }
+                    return tOrderList;
+                }
+                // 防止第一个sheet为空，继续遍历后面的sheet
+                continue;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 业务工单Excel解析
+     * @param workbook
+     * @return
+     */
     private static List<BusinessOrderEntity> businessOrderHandle(Workbook workbook) {
 
         List<BusinessOrderEntity> businessOrderList = new ArrayList<>();
@@ -218,6 +335,14 @@ public class AnalysisExcelUtils {
                                     titleLoop += 1;
                                     break;
                                 case 1:
+                                    /*问题描述：使用迭代器遍历，存在空单元格，会出现数据错位现象，导致查询不准确
+                                      解决：填补空单元格为null，或使用增强for循环
+                                    String county = nextCell.getStringCellValue();
+                                    if (county != null) {
+                                        businessOrder.setCounty(county);
+                                    } else {
+                                        businessOrder.setCounty(" ");
+                                    }*/
                                     String county = nextCell.getStringCellValue();
                                     businessOrder.setCounty(county);
                                     titleLoop += 1;
@@ -264,6 +389,7 @@ public class AnalysisExcelUtils {
         }
         return null;
     }
+
     /**
      * Excel数据处理
      * @param workbook

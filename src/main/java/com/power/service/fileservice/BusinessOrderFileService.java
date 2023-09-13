@@ -31,4 +31,18 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
         }
         return null;
     }
+
+    /**
+     * 查询和筛选
+     * @param pageNum 当前页码
+     * @param pageSize 当前页显示数据条数
+     * @param orderNum 工单号
+     * @param dates 筛选时，筛选的日期时间段
+     * @return list
+     */
+    public List<BusinessOrderEntity> queryOrFilter(Integer pageNum, Integer pageSize,
+                                                   String orderNum, List<String> dates) {
+
+        return null;
+    }
 }
