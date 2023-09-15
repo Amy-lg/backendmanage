@@ -1,5 +1,9 @@
 package com.power.service.fileservice;
 
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.entity.fileentity.TOrderEntity;
@@ -107,5 +111,51 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
         // 查询结果为空，返回0
         countList.add(monthCount);
         return countList;
+    }
+
+
+    /**
+     * 查询和筛选
+     * @param pageNum 当前页码
+     * @param pageSize 当前页显示数据条数
+     * @param orderNum 工单号
+     * @param dates 筛选时，筛选的日期时间段
+     * @return list
+     */
+    public IPage<TOrderEntity> queryOrFilterTOrder(Integer pageNum, Integer pageSize,
+                                                   String orderNum, List<String> dates) {
+
+        IPage<TOrderEntity> tOrderPage = new Page<>(pageNum, pageSize);
+        QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+        if (StrUtil.isEmpty(orderNum) && (dates == null || dates.size() == 0)) {
+            IPage<TOrderEntity> allPage = this.page(tOrderPage, queryWrapper);
+            return allPage;
+        } else {
+            // 检索
+            if (!StrUtil.isEmpty(orderNum) && dates == null) {
+                queryWrapper.like("order_num", orderNum);
+                IPage<TOrderEntity> tOrderIPage = this.page(tOrderPage, queryWrapper);
+                return tOrderIPage;
+            }
+            // 筛选
+            if ((dates != null || dates.size() == 2) && StrUtil.isEmpty(orderNum)) {
+                // 获取开始时间结束时间
+                String beginDate = dates.get(0);
+                String beginDateTime = beginDate + " 00:00:00";
+                String endDate = dates.get(1);
+                String endDateTime = endDate + " 23:59:59";
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Date beginTime = sdf.parse(beginDateTime);
+                    Date endTime = sdf.parse(endDateTime);
+                    queryWrapper.between("dispatch_order_time", beginTime, endTime);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+                IPage<TOrderEntity> filterPage = this.page(tOrderPage, queryWrapper);
+                return filterPage;
+            }
+            return null;
+        }
     }
 }

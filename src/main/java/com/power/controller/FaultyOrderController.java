@@ -1,6 +1,9 @@
 package com.power.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
+import com.power.entity.fileentity.BusinessOrderEntity;
+import com.power.entity.fileentity.TOrderEntity;
 import com.power.service.FaultyOrderService;
 import com.power.service.fileservice.BusinessOrderFileService;
 import com.power.service.fileservice.TOrderFileService;
@@ -55,7 +58,7 @@ public class FaultyOrderController {
 
 
     /**
-     * 查询筛选功能
+     * 业务工单故障查询筛选功能
      * @param pageNum 当前页码
      * @param pageSize 当前页显示数据条数
      * @param orderNum 工单号
@@ -67,8 +70,33 @@ public class FaultyOrderController {
                                  @RequestParam(required = false) String orderNum,
                                  @RequestParam(required = false) List<String> dates) {
 
-        ResultUtils.success(businessOrderFileService.queryOrFilter(pageNum,pageSize,orderNum,dates));
+        IPage<BusinessOrderEntity> pages = businessOrderFileService.queryOrFilter(pageNum, pageSize, orderNum, dates);
+        if (pages != null) {
+            return ResultUtils.success(pages);
+        } else {
+            return ResultUtils.success();
+        }
+    }
 
-        return null;
+
+    /**
+     * 小T工单故障查询筛选功能
+     * @param pageNum 当前页码
+     * @param pageSize 当前页显示数据条数
+     * @param orderNum 工单号
+     * @param dates 筛选时，筛选的日期时间段
+     * @return
+     */
+    @GetMapping("/searchOrFilterTOrder")
+    public Result searchOrFilterTOrder(@RequestParam Integer pageNum, @RequestParam Integer pageSize,
+                                 @RequestParam(required = false) String orderNum,
+                                 @RequestParam(required = false) List<String> dates) {
+
+        IPage<TOrderEntity> tOrderIPage = tOrderFileService.queryOrFilterTOrder(pageNum, pageSize, orderNum, dates);
+        if (tOrderIPage != null) {
+            return ResultUtils.success(tOrderIPage);
+        } else {
+            return ResultUtils.success();
+        }
     }
 }
