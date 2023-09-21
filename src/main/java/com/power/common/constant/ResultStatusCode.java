@@ -13,6 +13,8 @@ public enum ResultStatusCode {
      */
     OK_0(0, "OK_0"),
 
+    SUCCESS_UPLOAD(200, "数据上传成功"),
+
     /**
      * 错误
      */
@@ -21,7 +23,7 @@ public enum ResultStatusCode {
     ERROR_USER_001(001, "用户名或密码错误"),
 
 
-
+    FILE_TYPE_ERROR(5004, "文件类型错误"),
 
 
     EXCEPTION_USER_1001(1001, "用户信息不存在，请重新输入"),

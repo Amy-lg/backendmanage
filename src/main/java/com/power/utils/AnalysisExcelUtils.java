@@ -166,6 +166,46 @@ public class AnalysisExcelUtils {
         return null;
     }
 
+
+    /**
+     * 上传文件格式的通用判断方法
+     * @param file 文件
+     * @return
+     */
+    public static Workbook isExcelFile(MultipartFile file) {
+        if (!file.isEmpty()) {
+            String fileName = file.getOriginalFilename();
+            if (!"".equals(fileName) && fileName.length() != 0) {
+                // 判断上传文件的格式是否正确
+                boolean isXlsx = fileName.matches("^.+\\.(?i)(xlsx)$");
+                boolean isXls = fileName.matches("^.+\\.(?i)(xls)$");
+                // Excel2003版本
+                boolean isExcel2003 = true;
+                if (isXlsx || isXls) {
+                    if (isXlsx) {
+                        isExcel2003 = false;
+                    }
+                    Workbook workbook = null;
+                    InputStream is = null;
+                    try {
+                        is = file.getInputStream();
+                        if (isExcel2003) {
+                            workbook = new HSSFWorkbook(is);
+                        } else {
+                            workbook = new XSSFWorkbook(is);
+                        }
+                        return workbook;
+                    } catch (IOException e) {
+                        throw new ServiceException(5002, "文件处理异常");
+                    }
+                }
+                // 文件类型错误
+                throw new ServiceException(5003, "文件类型错误");
+            }
+        }
+        return null;
+    }
+
     /**
      * Word转Excel
      * @param fileName
