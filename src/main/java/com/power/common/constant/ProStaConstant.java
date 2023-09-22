@@ -37,4 +37,11 @@ public class ProStaConstant {
     public static final int OCTOBER = 10;
     public static final int NOVEMBER = 11;
     public static final int DECEMBER = 12;
+
+    // 状态信息
+    public static final String NORMAL = "正常";
+    public static final String STOP = "停止";
+    public static final String OPEN = "通";
+    public static final String CLOSE = "不通";
+
 }
