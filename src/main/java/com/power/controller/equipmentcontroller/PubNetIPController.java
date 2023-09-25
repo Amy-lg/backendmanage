@@ -2,38 +2,39 @@ package com.power.controller.equipmentcontroller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
-import com.power.entity.equipment.PubNetWebEntity;
-import com.power.service.equipmentservice.PubNetWebService;
+import com.power.entity.equipment.PubNetIPEntity;
+import com.power.service.equipmentservice.PubNetIPService;
 import com.power.utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 公网WebIP拨测控制层
+ * 公网IP拨测控制层
  * @since 2023/9
  * @author cyk
  */
 @RestController
-@RequestMapping("/api/pubNet")
-public class PubNetWebController {
+@RequestMapping("/api/pubNetIp")
+public class PubNetIPController {
 
     @Autowired
-    private PubNetWebService pubNetWebService;
+    private PubNetIPService pubNetIPService;
 
     /**
-     * 数据导入接口
-     * @param file 公网web拨测excel文件
+     * 数据导入
+     * @param file 公网ip拨测excel文件
      * @return
      */
     @PostMapping("/import")
     public Result importPubNetFile(@RequestParam MultipartFile file) {
-        if (!file.isEmpty()) {
-            String importResultInfo = pubNetWebService.importPubNetExcel(file);
-            return ResultUtils.success(importResultInfo);
+        String importResult = pubNetIPService.importPubNetIPExcel(file);
+        if (importResult != null) {
+            return ResultUtils.success(importResult);
         }
         return ResultUtils.success();
     }
+
 
     /**
      * 分页查询
@@ -42,13 +43,14 @@ public class PubNetWebController {
      * @return
      */
     @GetMapping("/queryInfo")
-    public Result queryPubNetInfo(@RequestParam Integer pageNum,
+    public Result queryPubNetIPInfo(@RequestParam Integer pageNum,
                                   @RequestParam Integer pageSize) {
 
-        IPage<PubNetWebEntity> pubNetWebPages = pubNetWebService.queryPubNetworkInfo(pageNum, pageSize);
-        if (pubNetWebPages != null) {
-            return ResultUtils.success(pubNetWebPages);
+        IPage<PubNetIPEntity> pubNetIpPages = pubNetIPService.queryPubNetworkIPInfo(pageNum, pageSize);
+        if (pubNetIpPages != null) {
+            return ResultUtils.success(pubNetIpPages);
         }
         return ResultUtils.success();
     }
+
 }

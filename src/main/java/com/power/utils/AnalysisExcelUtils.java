@@ -207,6 +207,26 @@ public class AnalysisExcelUtils {
     }
 
     /**
+     * 获取标题行公用方法
+     * @param sheet
+     * @return
+     */
+    public static List<String> getExcelTitle(Sheet sheet) {
+        ArrayList<String> titles = new ArrayList<>();
+        // 标题行
+        Row titleRow = sheet.getRow(0);
+        // excel中数据有多少列
+        short columns = titleRow.getLastCellNum();
+        for (int j = 0; j < columns; j++) {
+            Cell column = titleRow.getCell(j);
+            String titleValue = column.getStringCellValue();
+            titles.add(titleValue);
+        }
+        return titles;
+    }
+
+
+    /**
      * Word转Excel
      * @param fileName
      */

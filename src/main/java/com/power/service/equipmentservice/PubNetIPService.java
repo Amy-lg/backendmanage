@@ -5,8 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
-import com.power.entity.equipment.PubNetWebEntity;
-import com.power.mapper.equipmentmapper.PubNetWebMapper;
+import com.power.entity.equipment.PubNetIPEntity;
+import com.power.mapper.equipmentmapper.PubNetIPMapper;
 import com.power.utils.AnalysisExcelUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
@@ -16,61 +16,47 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 公网WebIP拨测业务层
- * @since 2023/9
- * @author cyk
- */
 @Service
-public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEntity> {
+public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity> {
 
     /**
      * 数据导入
-     * @param file 公网web拨测excel文件
+     * @param file 公网ip拨测excel文件
      * @return
      */
-    public String importPubNetExcel(MultipartFile file) {
+    public String importPubNetIPExcel(MultipartFile file) {
 
-        List<PubNetWebEntity> pubNetWebEntityList = this.importData(file);
-        if (pubNetWebEntityList != null) {
-            this.saveBatch(pubNetWebEntityList, 100);
-            /*for (PubNetWebEntity pubNetWeb : pubNetWebEntityList) {
-                this.saveOrUpdate(pubNetWeb);
-            }*/
+        List<PubNetIPEntity> pubNetIPEntityList = this.importData(file);
+        if (pubNetIPEntityList != null) {
+            this.saveBatch(pubNetIPEntityList, 100);
             return ResultStatusCode.SUCCESS_UPLOAD.toString();
         }
         return ResultStatusCode.FILE_TYPE_ERROR.toString();
     }
 
+
     /**
      * 文件解析
      * @return
      */
-    private List<PubNetWebEntity> importData(MultipartFile excelFile) {
-
+    private List<PubNetIPEntity> importData(MultipartFile excelFile) {
         Workbook workbook = AnalysisExcelUtils.isExcelFile(excelFile);
-        PubNetWebEntity pubNetWeb;
-        List<PubNetWebEntity> pubNetWebLists = new ArrayList<>();;
+        PubNetIPEntity pubNetIP;
+        List<PubNetIPEntity> pubNetIPList = new ArrayList<>();;
         if (workbook != null) {
             int sheets = workbook.getNumberOfSheets();
             for (int i = 0; i < sheets; i++) {
                 Sheet sheet = workbook.getSheetAt(i);
                 if (sheet != null) {
-                    ArrayList<String> titles = new ArrayList<>();
-                    // 标题行
-                    Row titleRow = sheet.getRow(0);
-                    // excel中数据有多少列
-                    short columns = titleRow.getLastCellNum();
-                    for (int j = 0; j < columns; j++) {
-                        Cell column = titleRow.getCell(j);
-                        String titleValue = column.getStringCellValue();
-                        titles.add(titleValue);
-                    }
+                    // 获取标题行公用方法(标题暂时没用到，以后可能需要使用)
+                    List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
                     // 循环遍历数据内容
-                    for (int j = 1; j <= sheet.getLastRowNum(); j++) {
+                    int lastRowNum = sheet.getLastRowNum();
+                    for (int j = 1; j <= lastRowNum; j++) {
                         Row contentRow = sheet.getRow(j);
+                        // 多少列
                         short lastCellNum = contentRow.getLastCellNum();
-                        pubNetWeb = new PubNetWebEntity();
+                        pubNetIP = new PubNetIPEntity();
                         String cellValue = null;
                         BigDecimal cellNumValue = null;
                         for (int k = 0; k < lastCellNum; k++) {
@@ -78,63 +64,69 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
                             CellType cellType = cell.getCellType();
                             if (CellType.STRING == cellType) {
                                 cellValue = cell.getStringCellValue();
+                            } else if (CellType.BLANK == cellType){
+                                cellValue = cell.getStringCellValue();
+                                cellNumValue = BigDecimal.valueOf(cell.getNumericCellValue());
                             } else {
                                 cellNumValue = BigDecimal.valueOf(cell.getNumericCellValue());
                             }
                             switch (k) {
                                 case 0:
-                                    pubNetWeb.setProjectName(cellValue);
+                                    pubNetIP.setProjectName(cellValue);
                                     break;
                                 case 1:
-                                    pubNetWeb.setEquipmentName(cellValue);
+                                    pubNetIP.setEquipmentName(cellValue);
                                     break;
                                 case 2:
-                                    pubNetWeb.setCity(cellValue);
+                                    pubNetIP.setCity(cellValue);
                                     break;
                                 case 3:
-                                    pubNetWeb.setCounty(cellValue);
+                                    pubNetIP.setCounty(cellValue);
                                     break;
                                 case 4:
-                                    pubNetWeb.setDestinationAddress(cellValue);
+                                    pubNetIP.setDestinationIp(cellValue);
                                     break;
                                 case 5:
-                                    pubNetWeb.setDialTime(cellValue);
+                                    pubNetIP.setServePort(cellValue);
                                     break;
                                 case 6:
-                                    if (cellValue != null && ProStaConstant.NORMAL.equals(cellValue)) {
-                                        pubNetWeb.setTaskStatus(true);
-                                    }else {
-                                        pubNetWeb.setTaskStatus(false);
-                                    }
+                                    pubNetIP.setDialTime(cellValue);
                                     break;
                                 case 7:
-                                    if (cellValue != null && ProStaConstant.OPEN.equals(cellValue)) {
-                                        pubNetWeb.setDialResult(true);
-                                    }else {
-                                        pubNetWeb.setDialResult(false);
-                                    }
+                                    pubNetIP.setDialType(cellValue);
                                     break;
                                 case 8:
-                                    pubNetWeb.setDownloadRate(cellNumValue);
+                                    if (cellValue != null && ProStaConstant.NORMAL.equals(cellValue)) {
+                                        pubNetIP.setTaskStatus(true);
+                                    }else {
+                                        pubNetIP.setTaskStatus(false);
+                                    }
                                     break;
                                 case 9:
-                                    pubNetWeb.setLoadingDelay(cellNumValue.intValue());
+                                    if (cellValue != null && ProStaConstant.OPEN.equals(cellValue)) {
+                                        pubNetIP.setDialResult(true);
+                                    }else {
+                                        pubNetIP.setDialResult(false);
+                                    }
                                     break;
                                 case 10:
-                                    pubNetWeb.setAccessDelay(cellNumValue.intValue());
+                                    pubNetIP.setLossRate(cellValue);
+                                    break;
+                                case 11:
+                                    pubNetIP.setLoadingDelay(cellNumValue);
                                     break;
                                 default:
-                                    pubNetWeb.setDnsDelay(cellNumValue.intValue());
+                                    pubNetIP.setShake(cellNumValue.intValue());
                                     break;
                             }
                         }
-                        pubNetWeb.setProjectStatus(true);
-                        pubNetWebLists.add(pubNetWeb);
+                        pubNetIP.setProjectStatus(true);
+                        pubNetIPList.add(pubNetIP);
                     }
                 }
                 continue;
             }
-            return pubNetWebLists;
+            return pubNetIPList;
         }
         return null;
     }
@@ -145,10 +137,10 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
      * @param pageSize
      * @return
      */
-    public IPage<PubNetWebEntity> queryPubNetworkInfo(Integer pageNum, Integer pageSize) {
-        IPage pubNetPage = new Page<PubNetWebEntity>(pageNum, pageSize);
-//        QueryWrapper<PubNetWebEntity> queryWrapper = new QueryWrapper<>();
-        IPage page = this.page(pubNetPage);
+    public IPage<PubNetIPEntity> queryPubNetworkIPInfo(Integer pageNum, Integer pageSize) {
+        IPage pubNetIpPage = new Page<PubNetIPEntity>(pageNum, pageSize);
+//        QueryWrapper<PubNetIPEntity> queryWrapper = new QueryWrapper<>();
+        IPage page = this.page(pubNetIpPage);
         return page;
     }
 }
