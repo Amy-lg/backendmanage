@@ -42,7 +42,7 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
     private List<PubNetIPEntity> importData(MultipartFile excelFile) {
         Workbook workbook = AnalysisExcelUtils.isExcelFile(excelFile);
         PubNetIPEntity pubNetIP;
-        List<PubNetIPEntity> pubNetIPList = new ArrayList<>();;
+        List<PubNetIPEntity> pubNetIPList = new ArrayList<>();
         if (workbook != null) {
             int sheets = workbook.getNumberOfSheets();
             for (int i = 0; i < sheets; i++) {
