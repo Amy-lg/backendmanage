@@ -23,6 +23,8 @@ public class ProStaConstant {
     public static final String TONG_XIANG = "桐乡";
     public static final String HAI_NING = "海宁";
     public static final String HAI_YAN = "海盐";
+    public static final String XIU_ZHOU = "秀洲";
+    public static final String NAN_HU = "南湖";
 
     // 月份常量
     public static final int JANUARY = 1;
@@ -43,5 +45,9 @@ public class ProStaConstant {
     public static final String STOP = "停止";
     public static final String OPEN = "通";
     public static final String CLOSE = "不通";
+
+    public static final String[] counties = {ProStaConstant.CUSTOMER,ProStaConstant.JIA_HE,ProStaConstant.PING_HU,
+            ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,
+            ProStaConstant.HAI_YAN, ProStaConstant.XIU_ZHOU, ProStaConstant.NAN_HU};
 
 }

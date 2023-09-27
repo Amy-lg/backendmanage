@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.equipment.IndustryVideoEntity;
 import com.power.mapper.equipmentmapper.IndustryVideoMapper;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, IndustryVideoEntity> {
@@ -50,6 +53,45 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
             }
         }
         return ResultStatusCode.FILE_TYPE_ERROR.toString();
+    }
+
+
+    /**
+     * 内网IP表 区县在线总数量
+     * @return
+     */
+    public Map<String, Long> queryAllOnlineCount() {
+        Map<String, Long> countMap = new HashMap<>();
+        String[] counties = {ProStaConstant.CUSTOMER,ProStaConstant.JIA_HE,ProStaConstant.PING_HU,
+                ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,
+                ProStaConstant.HAI_YAN, ProStaConstant.XIU_ZHOU, ProStaConstant.NAN_HU};
+
+        for (int i = 0; i < counties.length; i++) {
+            QueryWrapper<IndustryVideoEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.isNotNull("project_name").ne("project_name", "");
+            queryWrapper.eq("project_status", true);
+            queryWrapper.like("county", counties[i]);
+            long count = this.count(queryWrapper);
+            countMap.put(counties[i], count);
+        }
+        return countMap;
+    }
+
+
+    /**
+     * 内网IP表 区县总数量
+     * @return
+     */
+    public Map<String, Long> queryAllCount() {
+        Map<String, Long> allCountMap = new HashMap<>();
+        for (String county : ProStaConstant.counties) {
+            QueryWrapper<IndustryVideoEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.isNotNull("project_name").ne("project_name", "");
+            queryWrapper.like("county", county);
+            long count = this.count(queryWrapper);
+            allCountMap.put(county, count);
+        }
+        return allCountMap;
     }
 
     /**
