@@ -24,6 +24,7 @@ public enum ResultStatusCode {
 
 
     FILE_TYPE_ERROR(5004, "文件类型错误"),
+    CONDITION_ERROR(5005, "查询条件错误，请重新输入"),
 
 
     EXCEPTION_USER_1001(1001, "用户信息不存在，请重新输入"),

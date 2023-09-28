@@ -2,7 +2,9 @@ package com.power.controller.equipmentcontroller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
+import com.power.common.constant.ResultStatusCode;
 import com.power.entity.equipment.PubNetIPEntity;
+import com.power.entity.query.DialFilterQuery;
 import com.power.service.equipmentservice.PubNetIPService;
 import com.power.utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,22 @@ public class PubNetIPController {
             return ResultUtils.success(pubNetIpPages);
         }
         return ResultUtils.success();
+    }
+
+
+    /**
+     * 搜索、筛选
+     * @param dialFilterQuery
+     * @return
+     */
+    @PostMapping("/searchOrFilterInfo")
+    public Result searchIntranetIPInfo(@RequestBody DialFilterQuery dialFilterQuery) {
+
+        IPage<PubNetIPEntity> pubNetIPEntityIPage = pubNetIPService.searchOrFilter(dialFilterQuery);
+        if (pubNetIPEntityIPage != null) {
+            return ResultUtils.success(pubNetIPEntityIPage);
+        }
+        return ResultUtils.success(ResultStatusCode.CONDITION_ERROR.getMsg());
     }
 
 }

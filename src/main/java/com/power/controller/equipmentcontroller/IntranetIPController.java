@@ -3,8 +3,10 @@ package com.power.controller.equipmentcontroller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
 import com.power.common.constant.ProStaConstant;
+import com.power.common.constant.ResultStatusCode;
 import com.power.entity.dto.ProjectOnlineRateDTO;
 import com.power.entity.equipment.IntranetIPEntity;
+import com.power.entity.query.DialFilterQuery;
 import com.power.service.equipmentservice.IndustryVideoService;
 import com.power.service.equipmentservice.IntranetIPService;
 import com.power.service.equipmentservice.PubNetIPService;
@@ -65,13 +67,23 @@ public class IntranetIPController {
     }
 
 
-    // 搜索
-/*    @GetMapping("/searchInfo")
-    public Result searchIntranetIPInfo(@RequestParam Integer pageNum,
-                                       @RequestParam Integer pageSize) {
+    /**
+     * 搜索、筛选
+     * @param dialFilterQuery
+     * @return
+     */
+    @PostMapping("/searchOrFilterInfo")
+    public Result searchIntranetIPInfo(@RequestBody DialFilterQuery dialFilterQuery) {
 
-        return null;
-    }*/
+        if (dialFilterQuery != null) {
+            IPage<IntranetIPEntity> intranetIPEntityIPage = intranetIPService.searchOrFilter(dialFilterQuery);
+            if (intranetIPEntityIPage != null) {
+                return ResultUtils.success(intranetIPEntityIPage);
+            }
+            return ResultUtils.success(ResultStatusCode.CONDITION_ERROR.getMsg());
+        }
+        return ResultUtils.success();
+    }
 
     /**
      * 各个区县在线率计算

@@ -1,5 +1,6 @@
 package com.power.service.equipmentservice;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -7,6 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.equipment.PubNetIPEntity;
+import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.PubNetIPMapper;
 import com.power.utils.AnalysisExcelUtils;
 import org.apache.poi.ss.usermodel.*;
@@ -184,5 +186,56 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
             allCountMap.put(county, count);
         }
         return allCountMap;
+    }
+
+    /**
+     * 搜索、筛选
+     * @param dialFilterQuery
+     * @return
+     */
+    public IPage<PubNetIPEntity> searchOrFilter(DialFilterQuery dialFilterQuery) {
+        Integer pageNum = dialFilterQuery.getPageNum();
+        Integer pageSize = dialFilterQuery.getPageSize();
+
+        IPage<PubNetIPEntity> pubNetIPEntityPage =  new Page<>(pageNum, pageSize);
+        QueryWrapper<PubNetIPEntity> queryWrapper = new QueryWrapper<>();
+
+        // 搜索功能；查看搜索条件是否为空
+        String projectName = dialFilterQuery.getProjectName();
+        String targetIp = dialFilterQuery.getTargetIp();
+        // 搜搜判断
+        if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
+            if (!StrUtil.isEmpty(projectName)) {
+                queryWrapper.like("project_name", projectName);
+            }
+            if (!StrUtil.isEmpty(targetIp)) {
+                queryWrapper.like("destination_ip", targetIp);
+            }
+            IPage<PubNetIPEntity> searchPage = this.page(pubNetIPEntityPage, queryWrapper);
+            return searchPage;
+        }
+        // 筛选判断
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+        if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+            if (!StrUtil.isEmpty(county)) {
+                queryWrapper.eq("county", county);
+            }
+            if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                queryWrapper.eq("dial_result", true);
+            }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                queryWrapper.eq("dial_result", false);
+            }
+            if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                queryWrapper.eq("task_status", true);
+            } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                queryWrapper.eq("task_status", false);
+            }
+            IPage<PubNetIPEntity> filterPage = this.page(pubNetIPEntityPage, queryWrapper);
+            return filterPage;
+        }
+        IPage allPage = this.page(pubNetIPEntityPage);
+        return allPage;
     }
 }
