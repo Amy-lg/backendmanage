@@ -217,7 +217,7 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
             if (!StrUtil.isEmpty(projectName)) {
                 queryWrapper.like("project_name", projectName);
             }
-            if (!StrUtil.isEmpty(projectName)) {
+            if (!StrUtil.isEmpty(targetAddress)) {
                 queryWrapper.like("destination_address", targetAddress);
             }
             IPage<PubNetWebEntity> searchPage = this.page(pubNetWebEntityPage, queryWrapper);
