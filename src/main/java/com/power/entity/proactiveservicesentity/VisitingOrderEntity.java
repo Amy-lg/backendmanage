@@ -79,4 +79,8 @@ public class VisitingOrderEntity implements Serializable {
      * 工单批注
      */
     private String note;
+    /**
+     * 工单处理时间
+     */
+    private String dealTime;
 }

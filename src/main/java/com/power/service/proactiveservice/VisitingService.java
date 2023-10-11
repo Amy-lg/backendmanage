@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.proactiveservicesentity.VisitingOrderEntity;
+import com.power.entity.proactiveservicesentity.ordertimeentity.VisitingOrderTimeEntity;
 import com.power.entity.proactiveservicesentity.visitingfiltersearch.VisitingFilterSearchEntity;
 import com.power.mapper.proactivemapper.VisitingMapper;
 import com.power.utils.AnalysisExcelUtils;
@@ -27,13 +28,14 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
 
     /**
      * 走访工单数据批量导入
-     * @param file
+     * @param file 走访工单文件
+     * @param orderTimeFile 工单处理时间
      * @return
      */
-    public String importVisitingOrderExcel(MultipartFile file) {
+    public String importVisitingOrderExcel(MultipartFile file, MultipartFile orderTimeFile) {
 
-        if (!file.isEmpty()) {
-            List<VisitingOrderEntity> visitingOrderList = this.importData(file);
+        if (!file.isEmpty() && !orderTimeFile.isEmpty()) {
+            List<VisitingOrderEntity> visitingOrderList = this.importData(file, orderTimeFile);
             if (visitingOrderList != null) {
                 this.saveBatch(visitingOrderList, 100);
                 return ResultStatusCode.SUCCESS_UPLOAD.toString();
@@ -91,13 +93,19 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
     /**
      * 走访工单数据解析
      * @param visitingOrderFile
+     * @param orderTimeFile
      * @return
      */
-    private List<VisitingOrderEntity> importData(MultipartFile visitingOrderFile) {
+    private List<VisitingOrderEntity> importData(MultipartFile visitingOrderFile, MultipartFile orderTimeFile) {
 
         Workbook workbook = AnalysisExcelUtils.isExcelFile(visitingOrderFile);
         VisitingOrderEntity visitingOrder;
         ArrayList<VisitingOrderEntity> visitingOrderList = new ArrayList<>();
+
+        // 获取到每个工单的处理时间
+        List<VisitingOrderTimeEntity> visitingOrderTimeList = this.importVisitingOrderTimeData(orderTimeFile);
+
+        // 工单导入处理
         if (workbook != null) {
             int sheets = workbook.getNumberOfSheets();
             for (int i = 0; i < sheets; i++) {
@@ -176,12 +184,80 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
                                     break;
                             }
                         }
+                        // 比较两个工单编号，如果工单编号相同，则将时间设置到这个工单编号，否则设置为空
+                        for (VisitingOrderTimeEntity visitingOrderTime : visitingOrderTimeList) {
+                            // 带有时间的工单号
+                            String orderDict = visitingOrderTime.getOrderDict();
+                            // 原工单编号
+                            String orderNum = visitingOrder.getOrderNum();
+                            if (orderDict.equals(orderNum)) {
+                                String orderDealTime = visitingOrderTime.getOrderDealTime();
+                                visitingOrder.setDealTime(orderDealTime);
+                            }
+                        }
                         visitingOrderList.add(visitingOrder);
                     }
                 }
                 continue;
             }
             return visitingOrderList;
+        }
+        return null;
+    }
+
+
+    /**
+     * 工单处理时间Excel文件-数据处理
+     * @param orderTimeFile
+     * @return
+     */
+    private List<VisitingOrderTimeEntity> importVisitingOrderTimeData(MultipartFile orderTimeFile) {
+
+        Workbook workbook = AnalysisExcelUtils.isExcelFile(orderTimeFile);
+        VisitingOrderTimeEntity visitingOrderTime;
+        ArrayList<VisitingOrderTimeEntity> visitingOrderTimeList = new ArrayList<>();
+        if (workbook != null) {
+            int sheets = workbook.getNumberOfSheets();
+            for (int i = 0; i < sheets; i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                if (sheet != null) {
+                    int lastRowNum = sheet.getLastRowNum();
+                    for (int j = 1; j <= lastRowNum; j++) {
+                        Row contentRow = sheet.getRow(j);
+                        visitingOrderTime = new VisitingOrderTimeEntity();
+                        String cellValue = null;
+                        for (int k = 11; k < 43; k++) {
+                            Cell cell = contentRow.getCell(k);
+                            if (cell != null) {
+                                CellType cellType = cell.getCellType();
+                                if (CellType.STRING == cellType) {
+                                    cellValue = cell.getStringCellValue();
+                                } else if (CellType.BLANK == cellType){
+                                    cellValue = null;
+                                }else {
+                                    cellValue = null;
+                                }
+                            }else {
+                                cellValue = null;
+                            }
+                            switch (k) {
+                                case 11:
+                                    visitingOrderTime.setOrderDict(cellValue);
+                                    k += 30;
+                                    break;
+                                case 42:
+                                    visitingOrderTime.setOrderDealTime(cellValue);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        visitingOrderTimeList.add(visitingOrderTime);
+                    }
+                }
+                continue;
+            }
+            return visitingOrderTimeList;
         }
         return null;
     }

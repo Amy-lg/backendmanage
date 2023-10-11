@@ -29,13 +29,21 @@ public class VisitingController {
      * @return
      */
     @PostMapping("/import")
-    public Result importVisitingOrderFile(@RequestParam MultipartFile file) {
-        String importResult = visitingService.importVisitingOrderExcel(file);
+    public Result importVisitingOrderFile(@RequestParam MultipartFile file,
+                                          @RequestParam MultipartFile orderTimeFile) {
+        String importResult = visitingService.importVisitingOrderExcel(file, orderTimeFile);
         if (importResult != null) {
             return ResultUtils.success(importResult);
         }
         return ResultUtils.success();
     }
+
+    // 走访工单数据时间导入（以便于多表联查，显示主页中的折线图中数量）
+//    @PostMapping("/importDealTime")
+//    public Result importVisitingOrderDealTimeFile(@RequestParam MultipartFile orderTimeFile) {
+//        String str = visitingService.importVisitingOrderDealTimeExcel(orderTimeFile);
+//        return ResultUtils.success(str);
+//    }
 
 
     /**
