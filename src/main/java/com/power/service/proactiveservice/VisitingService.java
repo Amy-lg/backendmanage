@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.proactiveservicesentity.VisitingOrderEntity;
 import com.power.entity.proactiveservicesentity.ordertimeentity.VisitingOrderTimeEntity;
@@ -15,7 +16,9 @@ import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -89,6 +92,81 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
         return allPage;
     }
 
+
+    /**
+     * 月份工单处理数量
+     * @return
+     */
+    public List<Object> countOfVisitingOrder() {
+
+        List<Object> resultCountList = new ArrayList<>();
+        int[] monthCount = new int[12];
+        List<VisitingOrderEntity> visitingOrderList = this.list();
+        if (!visitingOrderList.isEmpty() && visitingOrderList.size() != 0) {
+            int oldYear = 0;
+            for (VisitingOrderEntity visitingOrder :
+                    visitingOrderList) {
+                String dealTime = visitingOrder.getDealTime();
+                if (!StrUtil.isBlank(dealTime)) {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                        Date parseTime = sdf.parse(dealTime);
+//                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+//                        dtf.format(dealTime);
+//                        TemporalAccessor parse = dtf.parse(dealTime);
+                        if (oldYear == 0 || oldYear == parseTime.getYear()) {
+                            oldYear = parseTime.getYear();
+                            int month = parseTime.getMonth() + 1;
+                            switch (month) {
+                                case ProStaConstant.JANUARY:
+                                    monthCount[0]++;
+                                    break;
+                                case ProStaConstant.FEBRUARY:
+                                    monthCount[1]++;
+                                    break;
+                                case ProStaConstant.MARCH:
+                                    monthCount[2]++;
+                                    break;
+                                case ProStaConstant.APRIL:
+                                    monthCount[3]++;
+                                    break;
+                                case ProStaConstant.MAY:
+                                    monthCount[4]++;
+                                    break;
+                                case ProStaConstant.JUNE:
+                                    monthCount[5]++;
+                                    break;
+                                case ProStaConstant.JULY:
+                                    monthCount[6]++;
+                                    break;
+                                case ProStaConstant.AUGUST:
+                                    monthCount[7]++;
+                                    break;
+                                case ProStaConstant.SEPTEMBER:
+                                    monthCount[8]++;
+                                    break;
+                                case ProStaConstant.OCTOBER:
+                                    monthCount[9]++;
+                                    break;
+                                case ProStaConstant.NOVEMBER:
+                                    monthCount[10]++;
+                                    break;
+                                default:
+                                    monthCount[11]++;
+                                    break;
+                            }
+                        }
+                        // 年份不相等，另作处理
+                        // todo
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        resultCountList.add(monthCount);
+        return resultCountList;
+    }
 
     /**
      * 走访工单数据解析

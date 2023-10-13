@@ -11,6 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * 走访工单控制层
  * @author cyk
@@ -63,4 +67,23 @@ public class VisitingController {
         }
         return ResultUtils.success();
     }
+
+
+    /**
+     * 月份工单处理数量
+     * @return
+     */
+    @GetMapping("/calcMonCountOfVisitingOrder")
+    public Result calculateCountOfDealingOrder() {
+
+        Map<String, Object> dealingOrderCountMap = new HashMap<>();
+        List<Object> count = visitingService.countOfVisitingOrder();
+        if (!count.isEmpty() && count != null) {
+            dealingOrderCountMap.put("走访工单月份处理数量", count);
+            return ResultUtils.success(dealingOrderCountMap);
+        }
+        return ResultUtils.success();
+    }
+
+
 }
