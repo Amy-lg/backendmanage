@@ -62,6 +62,9 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
             QueryWrapper<PubNetWebEntity> queryWrapper = new QueryWrapper<>();
             queryWrapper.isNotNull("project_name").ne("project_name", "");
             queryWrapper.eq("project_status", true);
+
+            queryWrapper.eq("task_status", true);
+            queryWrapper.eq("dial_result", true);
             queryWrapper.like("county", counties[i]);
             long count = this.count(queryWrapper);
             countMap.put(counties[i], count);

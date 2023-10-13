@@ -66,7 +66,11 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
         for (int i = 0; i < counties.length; i++) {
             QueryWrapper<IntranetIPEntity> queryWrapper = new QueryWrapper<>();
             queryWrapper.isNotNull("project_name").ne("project_name", "");
+            // 三个条件都满足情况下作为分子，计算在线率
             queryWrapper.eq("project_status", true);
+            queryWrapper.eq("task_status", true);
+            queryWrapper.eq("dial_status", true);
+
             queryWrapper.like("target_county", counties[i]);
             long count = this.count(queryWrapper);
             countMap.put(counties[i], count);
