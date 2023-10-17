@@ -7,8 +7,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.dto.NoteInfoEntity;
 import com.power.entity.proactiveservicesentity.VisitingOrderEntity;
-import com.power.entity.proactiveservicesentity.ordertimeentity.VisitingOrderTimeEntity;
+import com.power.entity.proactiveservicesentity.ordertimeentity.OrderDealingTimeEntity;
 import com.power.entity.proactiveservicesentity.visitingfiltersearch.VisitingFilterSearchEntity;
 import com.power.mapper.proactivemapper.VisitingMapper;
 import com.power.utils.AnalysisExcelUtils;
@@ -168,6 +169,37 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
         return resultCountList;
     }
 
+
+
+    /**
+     * 保存备注信息
+     * @param noteInfoEntity
+     * @return
+     */
+    public String updateVisitingNote(NoteInfoEntity noteInfoEntity) {
+        String orderNum = noteInfoEntity.getOrderNum();
+        String note = noteInfoEntity.getNote();
+        if (!StrUtil.isEmpty(noteInfoEntity.getOrderNum())) {
+            // 通过订单编号查询到
+            QueryWrapper<VisitingOrderEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("order_num", orderNum);
+            // 默认为true，查询出多个时，直接抛异常；false，查询出多个结果，选择第一个
+            VisitingOrderEntity inspectionOrder = this.getOne(queryWrapper, false);
+            if (!StrUtil.isBlank(note)) {
+                inspectionOrder.setNote(note);
+                boolean saveResult = this.saveOrUpdate(inspectionOrder);
+                if (saveResult) {
+                    return ResultStatusCode.SUCCESS_UPDATE.getMsg();
+                }
+            }
+            inspectionOrder.setNote(note);
+            this.saveOrUpdate(inspectionOrder);
+            return ResultStatusCode.SUCCESS_EMPTY.getMsg();
+        }
+        return null;
+    }
+
+
     /**
      * 走访工单数据解析
      * @param visitingOrderFile
@@ -181,7 +213,7 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
         ArrayList<VisitingOrderEntity> visitingOrderList = new ArrayList<>();
 
         // 获取到每个工单的处理时间
-        List<VisitingOrderTimeEntity> visitingOrderTimeList = this.importVisitingOrderTimeData(orderTimeFile);
+        List<OrderDealingTimeEntity> visitingOrderTimeList = this.importVisitingOrderTimeData(orderTimeFile);
 
         // 工单导入处理
         if (workbook != null) {
@@ -263,7 +295,7 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
                             }
                         }
                         // 比较两个工单编号，如果工单编号相同，则将时间设置到这个工单编号，否则设置为空
-                        for (VisitingOrderTimeEntity visitingOrderTime : visitingOrderTimeList) {
+                        for (OrderDealingTimeEntity visitingOrderTime : visitingOrderTimeList) {
                             // 带有时间的工单号
                             String orderDict = visitingOrderTime.getOrderDict();
                             // 原工单编号
@@ -289,11 +321,11 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
      * @param orderTimeFile
      * @return
      */
-    private List<VisitingOrderTimeEntity> importVisitingOrderTimeData(MultipartFile orderTimeFile) {
+    private List<OrderDealingTimeEntity> importVisitingOrderTimeData(MultipartFile orderTimeFile) {
 
         Workbook workbook = AnalysisExcelUtils.isExcelFile(orderTimeFile);
-        VisitingOrderTimeEntity visitingOrderTime;
-        ArrayList<VisitingOrderTimeEntity> visitingOrderTimeList = new ArrayList<>();
+        OrderDealingTimeEntity visitingOrderTime;
+        ArrayList<OrderDealingTimeEntity> visitingOrderTimeList = new ArrayList<>();
         if (workbook != null) {
             int sheets = workbook.getNumberOfSheets();
             for (int i = 0; i < sheets; i++) {
@@ -302,7 +334,7 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
                     int lastRowNum = sheet.getLastRowNum();
                     for (int j = 1; j <= lastRowNum; j++) {
                         Row contentRow = sheet.getRow(j);
-                        visitingOrderTime = new VisitingOrderTimeEntity();
+                        visitingOrderTime = new OrderDealingTimeEntity();
                         String cellValue = null;
                         for (int k = 11; k < 43; k++) {
                             Cell cell = contentRow.getCell(k);

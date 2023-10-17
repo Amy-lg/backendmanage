@@ -3,15 +3,18 @@ package com.power.controller.proactiveservicesctl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.dto.NoteInfoEntity;
 import com.power.entity.proactiveservicesentity.InspectionOrderEntity;
-import com.power.entity.proactiveservicesentity.VisitingOrderEntity;
 import com.power.entity.proactiveservicesentity.visitingfiltersearch.InspectionFilterSearchEntity;
-import com.power.entity.proactiveservicesentity.visitingfiltersearch.VisitingFilterSearchEntity;
 import com.power.service.proactiveservice.InspectionService;
 import com.power.utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -32,8 +35,9 @@ public class InspectionController {
      * @return
      */
     @PostMapping("/import")
-    public Result importInspectionOrderFile(@RequestParam MultipartFile file) {
-        String importResult = inspectionService.importInspectionOrderExcel(file);
+    public Result importInspectionOrderFile(@RequestParam MultipartFile file,
+                                            @RequestParam MultipartFile orderTimeFile) {
+        String importResult = inspectionService.importInspectionOrderExcel(file, orderTimeFile);
         if (importResult != null) {
             return ResultUtils.success(importResult);
         }
@@ -43,7 +47,7 @@ public class InspectionController {
 
     /**
      * 搜索、筛选（参数中只有pageNum,pageSize时表示分页查询所有）
-     * @param visitingFilterSearch
+     * @param inspectionFilterSearch
      * @return
      */
     @PostMapping("/searchOrFilterInfo")
@@ -57,6 +61,38 @@ public class InspectionController {
             return ResultUtils.success(ResultStatusCode.CONDITION_ERROR.getMsg());
         }
         return ResultUtils.success();
+    }
+
+
+    /**
+     * 巡检工单月份处理数量统计
+     * @return
+     */
+    @GetMapping("/calcMonCountOfInspectionOrder")
+    public Result calculateCountOfDealingOrder() {
+        Map<String, Object> dealingOrderCountMap = new HashMap<>();
+        List<Object> count = inspectionService.countOfInspectionOrder();
+        if (!count.isEmpty() && count != null) {
+            dealingOrderCountMap.put("巡检工单月份处理数量", count);
+            return ResultUtils.success(dealingOrderCountMap);
+        }
+        return ResultUtils.success();
+    }
+
+
+    /**
+     * 备注提交接口
+     * @param noteInfoEntity
+     * @return
+     */
+    @PostMapping("/updNote")
+    public Result modifyNote(@RequestBody NoteInfoEntity noteInfoEntity) {
+
+        String updateNoteRes = inspectionService.updateNote(noteInfoEntity);
+        if (updateNoteRes != null) {
+            return ResultUtils.success(updateNoteRes);
+        }
+        return ResultUtils.error(501, "设置备注信息的订单编号为空，请选择订单编号");
     }
 
 }

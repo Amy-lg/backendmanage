@@ -3,6 +3,7 @@ package com.power.controller.proactiveservicesctl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.dto.NoteInfoEntity;
 import com.power.entity.proactiveservicesentity.VisitingOrderEntity;
 import com.power.entity.proactiveservicesentity.visitingfiltersearch.VisitingFilterSearchEntity;
 import com.power.service.proactiveservice.VisitingService;
@@ -83,6 +84,22 @@ public class VisitingController {
             return ResultUtils.success(dealingOrderCountMap);
         }
         return ResultUtils.success();
+    }
+
+
+    /**
+     * 备注提交接口
+     * @param noteInfoEntity
+     * @return
+     */
+    @PostMapping("/updNote")
+    public Result modifyNote(@RequestBody NoteInfoEntity noteInfoEntity) {
+
+        String updateNoteRes = visitingService.updateVisitingNote(noteInfoEntity);
+        if (updateNoteRes != null) {
+            return ResultUtils.success(updateNoteRes);
+        }
+        return ResultUtils.error(501, "设置备注信息的订单编号为空，请选择订单编号");
     }
 
 

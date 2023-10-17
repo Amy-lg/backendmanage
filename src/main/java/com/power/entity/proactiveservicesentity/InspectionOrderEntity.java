@@ -55,4 +55,8 @@ public class InspectionOrderEntity implements Serializable {
      * 备注
      */
     private String note;
+    /**
+     * 工单处理时间
+     */
+    private String dealTime;
 }

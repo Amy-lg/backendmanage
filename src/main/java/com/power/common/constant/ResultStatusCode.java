@@ -15,6 +15,9 @@ public enum ResultStatusCode {
 
     SUCCESS_UPLOAD(200, "数据上传成功"),
 
+    SUCCESS_UPDATE(201, "备注信息保存成功"),
+    SUCCESS_EMPTY(201, "备注信息内容为空"),
+
     /**
      * 错误
      */
