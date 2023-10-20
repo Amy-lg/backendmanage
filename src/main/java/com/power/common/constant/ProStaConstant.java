@@ -46,6 +46,10 @@ public class ProStaConstant {
     public static final String OPEN = "通";
     public static final String CLOSE = "不通";
 
+    // 客户评价判断信息
+    public static final String SATISFIED = "满意";
+    public static final String UNSATISFIED = "非满";
+
     public static final String[] counties = {ProStaConstant.CUSTOMER,ProStaConstant.JIA_HE,ProStaConstant.PING_HU,
             ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,
             ProStaConstant.HAI_YAN, ProStaConstant.XIU_ZHOU, ProStaConstant.NAN_HU};
