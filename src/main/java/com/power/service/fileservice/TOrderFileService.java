@@ -6,17 +6,21 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
+import com.power.common.constant.ResultStatusCode;
 import com.power.entity.fileentity.TOrderEntity;
 import com.power.mapper.filemapper.TOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
+import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntity> {
@@ -36,6 +40,117 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
                 }
             }
             return "数据信息上传成功！";
+        }
+        return null;
+    }
+
+
+    /**
+     * 数据导入
+     * @param file
+     * @return
+     */
+    public String importTOrderExcel(MultipartFile file) {
+
+        List<TOrderEntity> tOrderEntityList = this.importProjectInfoData(file);
+        if (tOrderEntityList != null) {
+            boolean saveBatch = this.saveBatch(tOrderEntityList, 200);
+            if (saveBatch) {
+                return ResultStatusCode.SUCCESS_UPLOAD.toString();
+            }
+        }
+        return ResultStatusCode.FILE_TYPE_ERROR.toString();
+    }
+
+
+    /**
+     * 数据解析
+     * @param tOrderFile
+     * @return
+     */
+    private List<TOrderEntity> importProjectInfoData(MultipartFile tOrderFile) {
+
+        Workbook workbook = AnalysisExcelUtils.isExcelFile(tOrderFile);
+        List<TOrderEntity> tOrderEntityList = new ArrayList<>();
+        TOrderEntity tOrderEntity = null;
+        if (workbook != null) {
+            int sheets = workbook.getNumberOfSheets();
+            try {
+                // 通过反射获取私有属性名称
+                Class<?> clazz = Class.forName("com.power.entity.fileentity.TOrderEntity");
+                for (int i = 0; i < sheets; i++) {
+                    Sheet sheet = workbook.getSheetAt(i);
+                    if (sheet != null) {
+                        // 数据标题
+//                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
+                        // 数据总行数
+                        int lastRowNum = sheet.getLastRowNum();
+                        for (int j = 1; j <= lastRowNum; j++) {
+                            // 通过构造方法实例化对象
+                            tOrderEntity = (TOrderEntity) clazz.getDeclaredConstructor().newInstance();
+                            // 获取所有私有属性
+                            Field[] tOrderFields = clazz.getDeclaredFields();
+                            // 获取各个行实例
+                            Row contentRow = sheet.getRow(j);
+                            String cellValue = null;
+                            Iterator<Cell> cellIterator = contentRow.cellIterator();
+                            while (cellIterator.hasNext()) {
+                                Cell cell = cellIterator.next();
+                                CellType cellType = cell.getCellType();
+                                // 利用列索引循环属性赋值（从第3个属性开始）
+                                int columnIndex = cell.getColumnIndex() + 2;
+                                switch (cellType) {
+                                    case STRING:
+                                        cellValue = cell.getStringCellValue();
+                                        tOrderFields[columnIndex].setAccessible(true);
+                                        tOrderFields[columnIndex].set(tOrderEntity, cellValue);
+                                        break;
+                                    case NUMERIC:
+                                        cellValue = String.valueOf(cell.getNumericCellValue());
+                                        tOrderFields[columnIndex].setAccessible(true);
+                                        tOrderFields[columnIndex].set(tOrderEntity, cellValue);
+                                        break;
+                                    case BOOLEAN:
+                                        tOrderFields[columnIndex].setAccessible(true);
+                                        cellValue = String.valueOf(cell.getBooleanCellValue());
+                                        break;
+                                    case FORMULA:
+                                        // 创建公式解析器
+                                        FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+                                        // 解析公式
+                                        CellValue evaluate = formulaEvaluator.evaluate(cell);
+                                        double value = evaluate.getNumberValue();
+                                        tOrderFields[columnIndex].setAccessible(true);
+                                        tOrderFields[columnIndex].set(tOrderEntity, value);
+                                        break;
+                                    case BLANK:
+                                        tOrderFields[columnIndex].setAccessible(true);
+                                        cellValue = "";
+                                        break;
+                                    case ERROR:
+//                                        byte errorCellValue = cell.getErrorCellValue();
+                                        tOrderFields[columnIndex].setAccessible(true);
+                                        tOrderFields[columnIndex].set(tOrderEntity, false);
+                                        break;
+                                    default:
+                                        cellValue = null;
+                                        break;
+                                }
+                            }
+                            tOrderEntityList.add(tOrderEntity);
+                        }
+                    }
+                    continue;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return tOrderEntityList;
         }
         return null;
     }
@@ -158,4 +273,91 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
             return null;
         }
     }
+
+
+    /**
+     * 小T工单新增接口
+     * @param tOrder
+     * @return
+     */
+    public String addLittleTOrder(TOrderEntity tOrder) {
+
+        String orderNum = tOrder.getOrderNum();
+        if (orderNum != null) {
+            // 首先查询数据库是否存在此编号工单
+            QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("order_num", orderNum);
+            TOrderEntity tOrderEntity = this.getOne(queryWrapper, false);
+            if (tOrderEntity == null) {
+                // 不存在工单编号为 orderNum 的数据信息
+                // 新增
+                boolean updateResult = this.saveOrUpdate(tOrder);
+                if (updateResult) {
+                    return ResultStatusCode.SUCCESS_INSERT.getMsg();
+                }
+            } else {
+                // 如果有此工单编号的数据信息，那么更新
+                boolean b = this.update(tOrder, queryWrapper);
+                if (b) {
+                    return ResultStatusCode.SUCCESS_UPDATE_INFO.getMsg();
+                }
+            }
+        }
+        return ResultStatusCode.ERROR_UPDATE.getMsg();
+    }
+
+
+    /**
+     * 工单处理时长,显示当前时间月份的平均时长
+     * @return
+     */
+    public List<String> calculateAveDuration() {
+
+        List<String> tOrderAverageDurationList = new ArrayList<>();
+        QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+
+        // 当前月份时长
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        // currentTime：2023-10-11
+        String currentTime = formatter.format(LocalDateTime.now());
+        // currentMonth：2023-10
+        String currentMonth = currentTime.substring(0,7);
+
+        // 时长显示上一个月的
+        Date now = new Date();
+        Date beforeMonth;
+        // 获取日历
+        Calendar calendar = Calendar.getInstance();
+        // 当前时间赋值给日历
+        calendar.setTime(now);
+        // 前月
+        calendar.add(Calendar.MONTH, -1);
+        // 得到前月的时间
+        beforeMonth = calendar.getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String formatBeforeMonth = sdf.format(beforeMonth);
+        String oneMonthAgo = formatBeforeMonth.substring(0, 7);
+
+        queryWrapper.like("dispatch_order_time", oneMonthAgo);
+        // 当月时长数量
+        long count = this.count(queryWrapper);
+        if (count != 0) {
+            // 查询、计算总时长
+            float duration = 0f;
+            List<TOrderEntity> tOrderEntityList = this.list(queryWrapper);
+            for (TOrderEntity tOrder : tOrderEntityList) {
+                String faultyDuration = tOrder.getOrderDuration();
+                duration += Float.parseFloat(faultyDuration);
+            }
+//            String averageDuration = String.format("%.2f", duration / count);
+//            businessAverageDurationList.add(averageDuration);
+            tOrderAverageDurationList.add(String.valueOf(count)); // 总数为分母
+            tOrderAverageDurationList.add(String.valueOf(duration)); // 总时长为分子
+            return tOrderAverageDurationList;
+        }
+        tOrderAverageDurationList.add(String.valueOf(count));
+        return tOrderAverageDurationList;
+    }
+
+
 }

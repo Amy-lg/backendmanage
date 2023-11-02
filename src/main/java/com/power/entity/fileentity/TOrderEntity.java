@@ -26,7 +26,7 @@ public class TOrderEntity implements Serializable {
     /**
      * 项目编号
      */
-    private String projectNum;
+//    private String projectNum;
     /**
      * 派发时间
      */
@@ -35,4 +35,8 @@ public class TOrderEntity implements Serializable {
      * 工单历时
      */
     private String orderDuration;
+    /**
+     * 工单状态
+     */
+    private String orderStatus;
 }

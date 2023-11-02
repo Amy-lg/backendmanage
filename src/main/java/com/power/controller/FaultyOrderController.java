@@ -9,10 +9,7 @@ import com.power.service.fileservice.BusinessOrderFileService;
 import com.power.service.fileservice.TOrderFileService;
 import com.power.utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -80,6 +77,22 @@ public class FaultyOrderController {
 
 
     /**
+     * 业务工单新增、修改（修改工单状态）接口
+     * @param businessOrder
+     * @return
+     */
+    @PostMapping("/updateBusinessOrder")
+    public Result updateBusinessOrder(@RequestBody BusinessOrderEntity businessOrder) {
+
+        String addResult = businessOrderFileService.addBusinessOrder(businessOrder);
+        if (addResult != null) {
+            return ResultUtils.success(addResult);
+        }
+        return ResultUtils.success();
+    }
+
+
+    /**
      * 小T工单故障查询筛选功能
      * @param pageNum 当前页码
      * @param pageSize 当前页显示数据条数
@@ -99,4 +112,22 @@ public class FaultyOrderController {
             return ResultUtils.success();
         }
     }
+
+
+    /**
+     * 小T工单新增、修改（修改工单状态）接口
+     * @param tOrderEntity
+     * @return
+     */
+    @PostMapping("/updateTOrder")
+    public Result updateTOrder(@RequestBody TOrderEntity tOrderEntity) {
+
+        String addResult = tOrderFileService.addLittleTOrder(tOrderEntity);
+        if (addResult != null) {
+            return ResultUtils.success(addResult);
+        }
+        return ResultUtils.success();
+    }
+
+
 }
