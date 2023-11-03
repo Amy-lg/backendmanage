@@ -245,6 +245,10 @@ public class IntranetIPController {
                 }
             }
         }
-        return ResultUtils.success(countList);
+        // 存储总量以及在线率计算结果
+        Map<String, Object> map = new HashMap<>();
+        map.put("区县数量", calculateAllResultMap);
+        map.put("区县在线率", countList);
+        return ResultUtils.success(map);
     }
 }

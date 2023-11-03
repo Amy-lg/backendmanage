@@ -200,4 +200,24 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
         return null;
     }
 
+
+    /**
+     * 行业视频在线率计算
+     * @return
+     */
+    public List<Long> calculateVideoRate() {
+
+        List<Long> videoRateList = new ArrayList<>();
+        QueryWrapper<IndustryVideoEntity> queryWrapper = new QueryWrapper<>();
+
+        // 分母（所有项目名称不为空的数据）
+        queryWrapper.isNotNull("project_name").ne("project_name", "");
+        long denominator = this.count(queryWrapper);
+        videoRateList.add(denominator);
+        // 分子（摄像头状态在线的数据）
+        queryWrapper.eq("camera_status", "在线");
+        long numerator = this.count(queryWrapper);
+        videoRateList.add(numerator);
+        return videoRateList;
+    }
 }

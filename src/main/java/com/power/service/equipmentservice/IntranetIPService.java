@@ -255,4 +255,24 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
         return null;
     }
 
+
+    /**
+     * 内网IP在线率计算
+     * @return
+     */
+    public List<Long> calculateIntranetRate() {
+
+        List<Long> intranetIpRateList = new ArrayList<>();
+        QueryWrapper<IntranetIPEntity> queryWrapper = new QueryWrapper<>();
+
+        // 分母（任务状态）
+        queryWrapper.eq("task_status", true);
+        long denominator = this.count(queryWrapper);
+        intranetIpRateList.add(denominator);
+        // 分子（拨测状态）
+        queryWrapper.eq("dial_status", true);
+        long numerator = this.count(queryWrapper);
+        intranetIpRateList.add(numerator);
+        return intranetIpRateList;
+    }
 }

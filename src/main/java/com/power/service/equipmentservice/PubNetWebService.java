@@ -251,4 +251,25 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
         return allPage;
 
     }
+
+
+    /**
+     * 公网web在线率计算
+     * @return
+     */
+    public List<Long> calculateNetWebRate() {
+
+        List<Long> netWebRateList = new ArrayList<>();
+        QueryWrapper<PubNetWebEntity> queryWrapper = new QueryWrapper<>();
+
+        // 分母（任务状态）
+        queryWrapper.eq("task_status", true);
+        long denominator = this.count(queryWrapper);
+        netWebRateList.add(denominator);
+        // 分子（拨测状态）
+        queryWrapper.eq("dial_result", true);
+        long numerator = this.count(queryWrapper);
+        netWebRateList.add(numerator);
+        return netWebRateList;
+    }
 }

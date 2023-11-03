@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.equipment.IntranetIPEntity;
 import com.power.entity.equipment.PubNetIPEntity;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.PubNetIPMapper;
@@ -241,4 +242,27 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
         IPage allPage = this.page(pubNetIPEntityPage);
         return allPage;
     }
+
+
+    /**
+     * 公网IP在线率计算
+     * @return
+     */
+    public List<Long> calculateNetIpRate() {
+
+        List<Long> netIpRateList = new ArrayList<>();
+        QueryWrapper<PubNetIPEntity> queryWrapper = new QueryWrapper<>();
+
+        // 分母（任务状态）
+        queryWrapper.eq("task_status", true);
+        long denominator = this.count(queryWrapper);
+        netIpRateList.add(denominator);
+        // 分子（拨测状态）
+        queryWrapper.eq("dial_result", true);
+        long numerator = this.count(queryWrapper);
+        netIpRateList.add(numerator);
+        return netIpRateList;
+    }
+
+
 }
