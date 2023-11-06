@@ -38,10 +38,10 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
 
         List<PubNetWebEntity> pubNetWebEntityList = this.importData(file);
         if (pubNetWebEntityList != null) {
-            this.saveBatch(pubNetWebEntityList, 100);
-            /*for (PubNetWebEntity pubNetWeb : pubNetWebEntityList) {
+//            this.saveBatch(pubNetWebEntityList, 100);
+            for (PubNetWebEntity pubNetWeb : pubNetWebEntityList) {
                 this.saveOrUpdate(pubNetWeb);
-            }*/
+            }
             return ResultStatusCode.SUCCESS_UPLOAD.toString();
         }
         return ResultStatusCode.FILE_TYPE_ERROR.toString();

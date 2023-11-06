@@ -31,10 +31,14 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
     public String importIntranetIPExcel(MultipartFile file) {
         List<IntranetIPEntity> intranetIPEntityList = this.importData(file);
         if (intranetIPEntityList != null) {
-            this.saveBatch(intranetIPEntityList, 100);
+            // 每次导入时需排除重复数据或已导入的数据
+            for (IntranetIPEntity intranetIp : intranetIPEntityList) {
+                this.saveOrUpdate(intranetIp);
+            }
             return ResultStatusCode.SUCCESS_UPLOAD.toString();
         }
-        return ResultStatusCode.FILE_TYPE_ERROR.toString();
+//      this.saveBatch(intranetIPEntityList, 100);
+        return ResultStatusCode.ERROR_IMPORT.getMsg();
     }
 
 

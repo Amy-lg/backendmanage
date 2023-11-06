@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
-import com.power.entity.equipment.IntranetIPEntity;
 import com.power.entity.equipment.PubNetIPEntity;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.PubNetIPMapper;
@@ -34,7 +33,10 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
 
         List<PubNetIPEntity> pubNetIPEntityList = this.importData(file);
         if (pubNetIPEntityList != null) {
-            this.saveBatch(pubNetIPEntityList, 100);
+            for (PubNetIPEntity pubNetIp : pubNetIPEntityList) {
+                this.saveOrUpdate(pubNetIp);
+            }
+//            this.saveBatch(pubNetIPEntityList, 100);
             return ResultStatusCode.SUCCESS_UPLOAD.toString();
         }
         return ResultStatusCode.FILE_TYPE_ERROR.toString();

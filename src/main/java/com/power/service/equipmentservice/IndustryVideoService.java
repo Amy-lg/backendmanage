@@ -47,12 +47,13 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
 
         List<IndustryVideoEntity> industryVideoEntityList = this.importData(file);
         if (industryVideoEntityList != null) {
-            boolean saveBatch = this.saveBatch(industryVideoEntityList, 1000);
-            if (saveBatch) {
-                return ResultStatusCode.SUCCESS_UPLOAD.toString();
+            for (IndustryVideoEntity industryVideo : industryVideoEntityList) {
+                this.saveOrUpdate(industryVideo);
             }
+//            boolean saveBatch = this.saveBatch(industryVideoEntityList, 1000);
+            return ResultStatusCode.SUCCESS_UPLOAD.toString();
         }
-        return ResultStatusCode.FILE_TYPE_ERROR.toString();
+        return ResultStatusCode.ERROR_IMPORT.getMsg();
     }
 
 
