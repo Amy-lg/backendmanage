@@ -50,6 +50,10 @@ public class ProStaConstant {
     public static final String SATISFIED = "满意";
     public static final String UNSATISFIED = "非满";
 
+    // 基本信息表
+    public static final String IS_YES = "是";
+    public static final String IS_NO = "否";
+
     public static final String[] counties = {ProStaConstant.CUSTOMER,ProStaConstant.JIA_HE,ProStaConstant.PING_HU,
             ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,
             ProStaConstant.HAI_YAN, ProStaConstant.XIU_ZHOU, ProStaConstant.NAN_HU};

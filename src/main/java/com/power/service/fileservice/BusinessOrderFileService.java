@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.power.common.constant.ResultStatusCode;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.mapper.filemapper.BusinessOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
@@ -13,6 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -84,5 +88,75 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
             }
             return null;
         }
+    }
+
+
+    /**
+     * 业务工单新增接口
+     * @param businessOrder
+     * @return
+     */
+    public String addBusinessOrder(BusinessOrderEntity businessOrder) {
+
+        // 获取工单编号（唯一，不重复，不为空）
+        String orderNum = businessOrder.getOrderNum();
+        if (orderNum != null) {
+            // 首先查询数据库是否存在此编号工单
+            QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("order_num", orderNum);
+            BusinessOrderEntity businessOrderEntity = this.getOne(queryWrapper, false);
+            // 不存在工单编号为 orderNum 的数据信息
+            if (businessOrderEntity == null) {
+                // 新增
+                boolean updateResult = this.saveOrUpdate(businessOrder);
+                if (updateResult) {
+                    return ResultStatusCode.SUCCESS_INSERT.getMsg();
+                }
+            } else {
+                // 如果有此工单编号的数据信息，那么更新
+                boolean b = this.update(businessOrder, queryWrapper);
+                if (b) {
+                    return ResultStatusCode.SUCCESS_UPDATE_INFO.getMsg();
+                }
+            }
+        }
+        return ResultStatusCode.ERROR_UPDATE.getMsg();
+    }
+
+
+    /**
+     * 工单处理时长，显示当前时间月份的平均时长
+     * @return
+     */
+    public List<String> calculateAveDuration() {
+
+        List<String> businessAverageDurationList = new ArrayList<>();
+        QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        // currentTime：2023-10-11
+        String currentTime = formatter.format(LocalDateTime.now());
+        // currentMonth：2023-10
+        String currentMonth = currentTime.substring(0,7);
+
+        queryWrapper.like("faulty_time", currentMonth);
+        // 当月时长数量
+        long count = this.count(queryWrapper);
+        if (count != 0) {
+            // 查询、计算总时长
+            float duration = 0f;
+            List<BusinessOrderEntity> businessOrderEntityList = this.list(queryWrapper);
+            for (BusinessOrderEntity businessOrder : businessOrderEntityList) {
+                String faultyDuration = businessOrder.getFaultyDuration();
+                duration += Float.parseFloat(faultyDuration);
+            }
+//            String averageDuration = String.format("%.2f", duration / count);
+//            businessAverageDurationList.add(averageDuration);
+            businessAverageDurationList.add(String.valueOf(count)); // 总数为分母
+            businessAverageDurationList.add(String.valueOf(duration)); // 总时长为分子
+            return businessAverageDurationList;
+        }
+        businessAverageDurationList.add(String.valueOf(count));
+        return businessAverageDurationList;
     }
 }

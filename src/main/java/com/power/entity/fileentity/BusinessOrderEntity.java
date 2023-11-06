@@ -50,4 +50,8 @@ public class BusinessOrderEntity implements Serializable {
      * 故障标题
      */
     private String faultyTitle;
+    /**
+     * 工单状态
+     */
+    private String orderStatus;
 }

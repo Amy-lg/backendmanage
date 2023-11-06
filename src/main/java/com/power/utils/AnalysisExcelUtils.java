@@ -301,7 +301,7 @@ public class AnalysisExcelUtils {
                     // 获取数据总行数
                     int rowNum = sheet.getLastRowNum();
                     // 第一行为标题，从第二行开始为数据
-                    for (int j = 1; j < rowNum; j++) {
+                    for (int j = 1; j <= rowNum; j++) {
                         Row row = sheet.getRow(j);
                         if (row == null) {
                             continue;
@@ -324,7 +324,7 @@ public class AnalysisExcelUtils {
                                     break;
                                 case 2:
                                     String projectNum = nextCell.getStringCellValue();
-                                    tOrderEntity.setProjectNum(projectNum);
+//                                    tOrderEntity.setProjectNum(projectNum);
                                     titleLoop += 1;
                                     break;
                                 case 3:
@@ -377,13 +377,13 @@ public class AnalysisExcelUtils {
                     // 获取数据总行数
                     int rowNum = sheet.getLastRowNum();
                     // 第一行为标题，从第二行开始为数据
-                    for (int j = 1; j < rowNum; j++) {
+                    for (int j = 1; j <= rowNum; j++) {
                         Row row = sheet.getRow(j);
                         if (row == null && rowNum != 0) {
                             continue;
                         }
                         businessOrder = new BusinessOrderEntity();
-                        Iterator<Cell> cellIterator = row.iterator();
+                        Iterator<Cell> cellIterator = row.cellIterator();
                         int titleLoop = 0;
                         while (cellIterator.hasNext()) {
                             Cell nextCell = cellIterator.next();
