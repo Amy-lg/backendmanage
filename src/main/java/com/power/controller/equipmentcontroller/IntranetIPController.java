@@ -43,10 +43,10 @@ public class IntranetIPController {
     @PostMapping("/import")
     public Result importIntranetIpFile(@RequestParam MultipartFile file) {
         String importResult = intranetIPService.importIntranetIPExcel(file);
-        if (importResult != null) {
+        if (importResult != null && !importResult.equals(ResultStatusCode.ERROR_IMPORT.getMsg())) {
             return ResultUtils.success(importResult);
         }
-        return ResultUtils.success();
+        return ResultUtils.error(5003, ResultStatusCode.ERROR_IMPORT_001.getMsg());
     }
 
     /**

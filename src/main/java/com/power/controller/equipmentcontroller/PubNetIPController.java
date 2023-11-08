@@ -31,10 +31,10 @@ public class PubNetIPController {
     @PostMapping("/import")
     public Result importPubNetFile(@RequestParam MultipartFile file) {
         String importResult = pubNetIPService.importPubNetIPExcel(file);
-        if (importResult != null) {
+        if (importResult != null && !importResult.equals(ResultStatusCode.ERROR_IMPORT.getMsg())) {
             return ResultUtils.success(importResult);
         }
-        return ResultUtils.success();
+        return ResultUtils.error(5003, ResultStatusCode.ERROR_IMPORT_001.getMsg());
     }
 
 

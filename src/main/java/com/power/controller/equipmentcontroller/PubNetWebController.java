@@ -31,8 +31,11 @@ public class PubNetWebController {
     @PostMapping("/import")
     public Result importPubNetFile(@RequestParam MultipartFile file) {
         if (!file.isEmpty()) {
-            String importResultInfo = pubNetWebService.importPubNetExcel(file);
-            return ResultUtils.success(importResultInfo);
+            String importResult = pubNetWebService.importPubNetExcel(file);
+            if (importResult != null && !importResult.equals(ResultStatusCode.ERROR_IMPORT.getMsg())) {
+                return ResultUtils.success(importResult);
+            }
+            return ResultUtils.error(5003, ResultStatusCode.ERROR_IMPORT_001.getMsg());
         }
         return ResultUtils.success();
     }

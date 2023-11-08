@@ -31,15 +31,21 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
      */
     public String importPubNetIPExcel(MultipartFile file) {
 
-        List<PubNetIPEntity> pubNetIPEntityList = this.importData(file);
-        if (pubNetIPEntityList != null) {
-            for (PubNetIPEntity pubNetIp : pubNetIPEntityList) {
-                this.saveOrUpdate(pubNetIp);
-            }
+        // 先判断上传的文件是否对应数据库信息
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename.contains("公网ip拨测数据")) {
+            List<PubNetIPEntity> pubNetIPEntityList = this.importData(file);
+            if (pubNetIPEntityList != null) {
+                for (PubNetIPEntity pubNetIp : pubNetIPEntityList) {
+                    QueryWrapper<PubNetIPEntity> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("project_name", pubNetIp.getProjectName());
+                    this.saveOrUpdate(pubNetIp, queryWrapper);
+                }
 //            this.saveBatch(pubNetIPEntityList, 100);
-            return ResultStatusCode.SUCCESS_UPLOAD.toString();
+                return ResultStatusCode.SUCCESS_UPLOAD.getMsg();
+            }
         }
-        return ResultStatusCode.FILE_TYPE_ERROR.toString();
+        return ResultStatusCode.ERROR_IMPORT.getMsg();
     }
 
 
@@ -69,15 +75,28 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
                         BigDecimal cellNumValue = null;
                         for (int k = 0; k < lastCellNum; k++) {
                             Cell cell = contentRow.getCell(k);
-                            CellType cellType = cell.getCellType();
-                            if (CellType.STRING == cellType) {
-                                cellValue = cell.getStringCellValue();
-                            } else if (CellType.BLANK == cellType){
-                                cellValue = cell.getStringCellValue();
-                                cellNumValue = BigDecimal.valueOf(cell.getNumericCellValue());
+                            if (cell != null) {
+                                CellType cellType = cell.getCellType();
+                                if (CellType.STRING == cellType) {
+                                    cellValue = cell.getStringCellValue();
+                                } else if (CellType.BLANK == cellType) {
+                                    cellValue = cell.getStringCellValue();
+                                    cellNumValue = BigDecimal.valueOf(cell.getNumericCellValue());
+                                } else {
+                                    cellNumValue = BigDecimal.valueOf(cell.getNumericCellValue());
+                                }
                             } else {
-                                cellNumValue = BigDecimal.valueOf(cell.getNumericCellValue());
+                                cellValue = null;
                             }
+//                            CellType cellType = cell.getCellType();
+//                            if (CellType.STRING == cellType) {
+//                                cellValue = cell.getStringCellValue();
+//                            } else if (CellType.BLANK == cellType){
+//                                cellValue = cell.getStringCellValue();
+//                                cellNumValue = BigDecimal.valueOf(cell.getNumericCellValue());
+//                            } else {
+//                                cellNumValue = BigDecimal.valueOf(cell.getNumericCellValue());
+//                            }
                             switch (k) {
                                 case 0:
                                     pubNetIP.setProjectName(cellValue);

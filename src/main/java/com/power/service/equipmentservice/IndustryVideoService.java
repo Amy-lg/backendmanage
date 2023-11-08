@@ -9,10 +9,7 @@ import com.power.common.constant.ResultStatusCode;
 import com.power.entity.equipment.IndustryVideoEntity;
 import com.power.mapper.equipmentmapper.IndustryVideoMapper;
 import com.power.utils.AnalysisExcelUtils;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,13 +42,18 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
      */
     public String importIndustryVideoExcel(MultipartFile file) {
 
-        List<IndustryVideoEntity> industryVideoEntityList = this.importData(file);
-        if (industryVideoEntityList != null) {
-            for (IndustryVideoEntity industryVideo : industryVideoEntityList) {
-                this.saveOrUpdate(industryVideo);
-            }
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename.contains("行业视频")) {
+            List<IndustryVideoEntity> industryVideoEntityList = this.importData(file);
+            if (industryVideoEntityList != null) {
+                for (IndustryVideoEntity industryVideo : industryVideoEntityList) {
+                    QueryWrapper<IndustryVideoEntity> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("equipment_ip", industryVideo.getEquipmentIp());
+                    this.saveOrUpdate(industryVideo, queryWrapper);
+                }
 //            boolean saveBatch = this.saveBatch(industryVideoEntityList, 1000);
-            return ResultStatusCode.SUCCESS_UPLOAD.toString();
+                return ResultStatusCode.SUCCESS_UPLOAD.getMsg();
+            }
         }
         return ResultStatusCode.ERROR_IMPORT.getMsg();
     }
@@ -137,7 +139,19 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
                             String cellValue = null;
                             for (int k = 0; k < lastCellNum; k++) {
                                 Cell cell = contentRow.getCell(k);
-                                cellValue = cell.getStringCellValue();
+                                if (cell != null) {
+                                    CellType cellType = cell.getCellType();
+                                    if (CellType.STRING == cellType) {
+                                        cellValue = cell.getStringCellValue();
+                                    } else if (CellType.BLANK == cellType){
+                                        cellValue = null;
+                                    } else {
+                                        cellValue = cell.getStringCellValue();
+                                    }
+                                } else {
+                                    cellValue = null;
+                                }
+//                                cellValue = cell.getStringCellValue();
                                 switch (k) {
                                     case 0:
                                         industryVideo.setCameraStatus(cellValue);

@@ -29,15 +29,21 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
      * @return
      */
     public String importIntranetIPExcel(MultipartFile file) {
-        List<IntranetIPEntity> intranetIPEntityList = this.importData(file);
-        if (intranetIPEntityList != null) {
-            // 每次导入时需排除重复数据或已导入的数据
-            for (IntranetIPEntity intranetIp : intranetIPEntityList) {
-                this.saveOrUpdate(intranetIp);
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename.contains("拨测任务")) {
+            List<IntranetIPEntity> intranetIPEntityList = this.importData(file);
+            if (intranetIPEntityList != null) {
+                // 每次导入时需排除重复数据或已导入的数据
+                for (IntranetIPEntity intranetIp : intranetIPEntityList) {
+                    QueryWrapper<IntranetIPEntity> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("target_ip", intranetIp.getTargetIp());
+                    this.saveOrUpdate(intranetIp, queryWrapper);
+                }
+                return ResultStatusCode.SUCCESS_UPLOAD.toString();
             }
-            return ResultStatusCode.SUCCESS_UPLOAD.toString();
-        }
 //      this.saveBatch(intranetIPEntityList, 100);
+        }
         return ResultStatusCode.ERROR_IMPORT.getMsg();
     }
 

@@ -2,6 +2,7 @@ package com.power.controller.equipmentcontroller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
+import com.power.common.constant.ResultStatusCode;
 import com.power.entity.equipment.IndustryVideoEntity;
 import com.power.service.equipmentservice.IndustryVideoService;
 import com.power.utils.ResultUtils;
@@ -30,8 +31,11 @@ public class IndustryVideoController {
     public Result importIndustryVideoFile(@RequestParam("file") MultipartFile file) {
 
         if (file != null) {
-            String str = videoService.importIndustryVideoExcel(file);
-            return ResultUtils.success(str);
+            String importResult = videoService.importIndustryVideoExcel(file);
+            if (importResult != null && !importResult.equals(ResultStatusCode.ERROR_IMPORT.getMsg())) {
+                return ResultUtils.success(importResult);
+            }
+            return ResultUtils.error(5003, ResultStatusCode.ERROR_IMPORT_001.getMsg());
         }
         return ResultUtils.success();
     }

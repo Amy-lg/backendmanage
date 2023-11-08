@@ -36,15 +36,20 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
      */
     public String importPubNetExcel(MultipartFile file) {
 
-        List<PubNetWebEntity> pubNetWebEntityList = this.importData(file);
-        if (pubNetWebEntityList != null) {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename.contains("公网web拨测数据")) {
+            List<PubNetWebEntity> pubNetWebEntityList = this.importData(file);
+            if (pubNetWebEntityList != null) {
 //            this.saveBatch(pubNetWebEntityList, 100);
-            for (PubNetWebEntity pubNetWeb : pubNetWebEntityList) {
-                this.saveOrUpdate(pubNetWeb);
+                for (PubNetWebEntity pubNetWeb : pubNetWebEntityList) {
+                    QueryWrapper<PubNetWebEntity> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("project_name", pubNetWeb.getProjectName());
+                    this.saveOrUpdate(pubNetWeb, queryWrapper);
+                }
+                return ResultStatusCode.SUCCESS_UPLOAD.getMsg();
             }
-            return ResultStatusCode.SUCCESS_UPLOAD.toString();
         }
-        return ResultStatusCode.FILE_TYPE_ERROR.toString();
+        return ResultStatusCode.ERROR_IMPORT.getMsg();
     }
 
 
