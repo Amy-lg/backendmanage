@@ -308,10 +308,11 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
 
 
     /**
-     * 工单处理时长,显示当前时间月份的平均时长
+     * 1.工单处理时长,显示当前时间月份的平均时长
+     * 2.分区县计算工单处理时长
      * @return
      */
-    public List<String> calculateAveDuration() {
+    public List<String> calculateAveDuration(String ... county) {
 
         List<String> tOrderAverageDurationList = new ArrayList<>();
         QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();

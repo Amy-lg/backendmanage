@@ -125,10 +125,11 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
 
 
     /**
-     * 工单处理时长，显示当前时间月份的平均时长
+     * 1.工单处理时长，显示当前时间月份的平均时长
+     * 2.分区县计算工单处理时长
      * @return
      */
-    public List<String> calculateAveDuration() {
+    public List<String> calculateAveDuration(String ... county) {
 
         List<String> businessAverageDurationList = new ArrayList<>();
         QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
@@ -139,6 +140,10 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
         // currentMonth：2023-10
         String currentMonth = currentTime.substring(0,7);
 
+        // 如果参数不为null，那么就是分区县的平均时长
+        if (county.length != 0) {
+            queryWrapper.like("county", county[0]);
+        }
         queryWrapper.like("faulty_time", currentMonth);
         // 当月时长数量
         long count = this.count(queryWrapper);

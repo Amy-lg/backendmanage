@@ -279,9 +279,10 @@ public class ProjectBasicInfoService extends ServiceImpl<ProjectBasicInfoMapper,
 
     /**
      * 纳管率计算
+     * @param county 可变参数，区县名
      * @return
      */
-    public List<Long> calculateAcceptRate() {
+    public List<Long> calculateAcceptRate(String ... county) {
 
         List<Long> acceptRateList = new ArrayList<>();
         QueryWrapper<BasicInfoEntity> queryWrapper = new QueryWrapper<>();
@@ -289,6 +290,11 @@ public class ProjectBasicInfoService extends ServiceImpl<ProjectBasicInfoMapper,
         // 项目结束时间之前
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String currentTime = formatter.format(LocalDateTime.now());
+
+        // 根据county是否有值计算区县的纳管率
+        if (county != null && county.length != 0) {
+            queryWrapper.like("county", county[0]);
+        }
         queryWrapper.gt("project_end_date", currentTime);
         // 分母（维护 or 维护+质保）
         queryWrapper.like("maintenance_type", "维护");
