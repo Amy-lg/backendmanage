@@ -161,6 +161,55 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
         return allPage;
     }
 
+
+    /**
+     * 内网IP表搜索、筛选后导出使用
+     * @param dialFilterQuery
+     * @return
+     */
+    public List<IntranetIPEntity> searchOrFilterByExport(DialFilterQuery dialFilterQuery) {
+
+        QueryWrapper<IntranetIPEntity> queryWrapper = new QueryWrapper<>();
+        // 搜索功能；查看搜索条件是否为空
+        String projectName = dialFilterQuery.getProjectName();
+        String targetIp = dialFilterQuery.getTargetIp();
+        // 搜搜判断
+        if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
+            if (!StrUtil.isEmpty(projectName)) {
+                queryWrapper.like("project_name", projectName);
+            }
+            if (!StrUtil.isEmpty(targetIp)) {
+                queryWrapper.like("target_ip", targetIp);
+            }
+            List<IntranetIPEntity> searchList = this.list(queryWrapper);
+            return searchList;
+        }
+        // 筛选判断
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+        if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+            if (!StrUtil.isEmpty(county)) {
+                queryWrapper.eq("target_county", county);
+            }
+            if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                queryWrapper.eq("dial_status", true);
+            }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                queryWrapper.eq("dial_status", false);
+            }
+            if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                queryWrapper.eq("task_status", true);
+            } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                queryWrapper.eq("task_status", false);
+            }
+            List<IntranetIPEntity> filterList = this.list(queryWrapper);
+            return filterList;
+        }
+        List<IntranetIPEntity> allList = this.list();
+        return allList;
+    }
+
+
     /**
      * 文件解析
      * @return

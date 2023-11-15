@@ -277,4 +277,54 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
         netWebRateList.add(numerator);
         return netWebRateList;
     }
+
+
+    /**
+     * 搜索、筛选后导出使用
+     * @param dialFilterQuery
+     * @return
+     */
+    public List<PubNetWebEntity> searchOrFilterByExport(DialFilterQuery dialFilterQuery) {
+
+        QueryWrapper<PubNetWebEntity> queryWrapper = new QueryWrapper<>();
+        // 搜索功能；查看搜索条件是否为空
+        String projectName = dialFilterQuery.getProjectName();
+        String targetAddress = dialFilterQuery.getTargetIp();
+        // 搜搜判断
+        if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetAddress)) {
+            if (!StrUtil.isEmpty(projectName)) {
+                queryWrapper.like("project_name", projectName);
+            }
+            if (!StrUtil.isEmpty(targetAddress)) {
+                queryWrapper.like("destination_address", targetAddress);
+            }
+            List<PubNetWebEntity> searchList = this.list(queryWrapper);
+            return searchList;
+        }
+        // 筛选判断
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+        if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+            if (!StrUtil.isEmpty(county)) {
+                queryWrapper.eq("county", county);
+            }
+            if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                queryWrapper.eq("dial_result", true);
+            }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                queryWrapper.eq("dial_result", false);
+            }
+            if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                queryWrapper.eq("task_status", true);
+            } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                queryWrapper.eq("task_status", false);
+            }
+            List<PubNetWebEntity> filterList = this.list(queryWrapper);
+            return filterList;
+        }
+        List<PubNetWebEntity> allPage = this.list();
+        return allPage;
+    }
+
+
 }

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.equipment.IndustryVideoEntity;
+import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.IndustryVideoMapper;
 import com.power.utils.AnalysisExcelUtils;
 import org.apache.poi.ss.usermodel.*;
@@ -235,4 +236,20 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
         videoRateList.add(numerator);
         return videoRateList;
     }
+
+
+    /**
+     * 搜索、筛选后导出使用
+     * @return
+     */
+    public List<IndustryVideoEntity> searchOrFilterByExport() {
+
+        QueryWrapper<IndustryVideoEntity> queryWrapper = new QueryWrapper<>();
+        // 筛选指定字段 不为空或为空字符串的情况
+        queryWrapper.isNotNull("project_name").ne("project_name", "");
+        List<IndustryVideoEntity> list = this.list(queryWrapper);
+        return list;
+    }
+
+
 }

@@ -4,6 +4,7 @@ import com.power.entity.Exam;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.entity.fileentity.TOrderEntity;
 import com.power.exception.ServiceException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -13,6 +14,9 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.net.URLEncoder;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -223,6 +227,30 @@ public class AnalysisExcelUtils {
             titles.add(titleValue);
         }
         return titles;
+    }
+
+
+    /**
+     * 设置导出Excel的文件格式信息
+     * @param response 响应
+     * @param fileName 文件名称
+     */
+    public static void settingExcelFileFormat(HttpServletResponse response, String fileName) {
+
+        try {
+            if (fileName != null) {
+                // 给下载的文件添加时间戳
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
+                String currentTime = formatter.format(LocalDateTime.now());
+                String fileNameDate = fileName + currentTime;
+                // fileName不能为中文，中文需要加下面一行代码，进行自行编码
+                fileNameDate = URLEncoder.encode(fileNameDate, "utf-8");
+                response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
+                response.setHeader("Content-Disposition", "attachment;filename=" + fileNameDate + ".xlsx");
+            }
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

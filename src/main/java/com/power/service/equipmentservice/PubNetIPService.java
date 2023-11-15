@@ -266,6 +266,54 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
 
 
     /**
+     * 搜索、筛选后导出使用
+     * @param dialFilterQuery
+     * @return
+     */
+    public List<PubNetIPEntity> searchOrFilterByExport(DialFilterQuery dialFilterQuery) {
+
+        QueryWrapper<PubNetIPEntity> queryWrapper = new QueryWrapper<>();
+        // 搜索功能；查看搜索条件是否为空
+        String projectName = dialFilterQuery.getProjectName();
+        String targetIp = dialFilterQuery.getTargetIp();
+        // 搜搜判断
+        if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
+            if (!StrUtil.isEmpty(projectName)) {
+                queryWrapper.like("project_name", projectName);
+            }
+            if (!StrUtil.isEmpty(targetIp)) {
+                queryWrapper.like("destination_ip", targetIp);
+            }
+            List<PubNetIPEntity> searchList = this.list(queryWrapper);
+            return searchList;
+        }
+        // 筛选判断
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+        if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+            if (!StrUtil.isEmpty(county)) {
+                queryWrapper.eq("county", county);
+            }
+            if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                queryWrapper.eq("dial_result", true);
+            }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                queryWrapper.eq("dial_result", false);
+            }
+            if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                queryWrapper.eq("task_status", true);
+            } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                queryWrapper.eq("task_status", false);
+            }
+            List<PubNetIPEntity> filterList = this.list(queryWrapper);
+            return filterList;
+        }
+        List<PubNetIPEntity> allList = this.list();
+        return allList;
+    }
+
+
+    /**
      * 公网IP在线率计算
      * @return
      */
