@@ -1,6 +1,12 @@
 package com.power.controller.SLAcontroller;
 
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.poi.excel.ExcelUtil;
+import cn.hutool.poi.excel.ExcelWriter;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
+import com.power.entity.slaentity.SLAFaultyEntity;
+import com.power.service.SLAservice.SLAFaultyService;
 import com.power.service.basicservice.ProjectBasicInfoService;
 import com.power.service.equipmentservice.IndustryVideoService;
 import com.power.service.equipmentservice.IntranetIPService;
@@ -8,11 +14,14 @@ import com.power.service.equipmentservice.PubNetIPService;
 import com.power.service.equipmentservice.PubNetWebService;
 import com.power.service.fileservice.BusinessOrderFileService;
 import com.power.service.fileservice.TOrderFileService;
+import com.power.utils.AnalysisExcelUtils;
 import com.power.utils.ResultUtils;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +29,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/slaCalc")
 public class SlaController {
+
+    @Autowired
+    private SLAFaultyService slaFaultyService;
 
     @Autowired
     private ProjectBasicInfoService basicInfoService;
@@ -124,4 +136,121 @@ public class SlaController {
         }
         return ResultUtils.success();
     }
+
+
+    /**
+     * 数据信息导入
+     * @param file
+     * @return
+     */
+    @PostMapping("/import")
+    public Result importSLAFaulty(@RequestParam MultipartFile file) {
+
+        if (!file.isEmpty()) {
+            String importResult = slaFaultyService.importSLAFaultyExcel(file);
+            return ResultUtils.success(importResult);
+        }
+        return ResultUtils.success();
+    }
+
+
+    /**
+     * 搜索、页面显示查询
+     * @param pageNum
+     * @param pageSize
+     * @param ictNum 搜索功能参数，ict编号
+     * @return
+     */
+    @GetMapping("/querySLAInfo")
+    public Result queryAll(@RequestParam Integer pageNum, @RequestParam Integer pageSize,
+                           @RequestParam(required = false) String ictNum) {
+
+        IPage<SLAFaultyEntity> slaFaultyPages = slaFaultyService.querySLAFaulty(pageNum, pageSize, ictNum);
+        if (slaFaultyPages != null) {
+            return ResultUtils.success(slaFaultyPages);
+        }
+        return ResultUtils.success();
+    }
+
+
+    /**
+     * 更新数据
+     * @param slaFaulty
+     * @return
+     */
+    @PostMapping("/editSLA")
+    public Result updateSLAFaulty(@RequestBody SLAFaultyEntity slaFaulty) {
+
+        List<Object> updStaList = slaFaultyService.updSLAInfo(slaFaulty);
+        if (updStaList != null && updStaList.size() != 0) {
+            return ResultUtils.success(updStaList);
+        }
+        return ResultUtils.success();
+    }
+
+
+    /**
+     * 新增数据
+     * @param slaFaulty
+     * @return
+     */
+    @PostMapping("/addSLA")
+    public Result addSLAFaulty(@RequestBody SLAFaultyEntity slaFaulty) {
+
+        List<Object> addStaList = slaFaultyService.insertSLAInfo(slaFaulty);
+        if (addStaList != null && addStaList.size() != 0) {
+            return ResultUtils.success(addStaList);
+        }
+        return ResultUtils.success();
+    }
+
+
+    /**
+     * 删除数据
+     * @param ids 删除编号集合
+     * @return
+     */
+    @PostMapping("/delBatchSLA")
+    public Result deleteSLAFaultyById(@RequestBody List<Integer> ids) {
+
+        List<Object> delStaList = slaFaultyService.delBatchSLAById(ids);
+        if (delStaList != null && delStaList.size() != 0) {
+            return ResultUtils.success(delStaList);
+        }
+        return ResultUtils.success();
+    }
+
+
+    //医院的墙壁比教堂听过更多虔诚的祈祷！
+    /**
+     * 导出
+     * @param request
+     * @param response
+     */
+    @PostMapping("/exportXlsx")
+    public void exportSlaAsXlsx(HttpServletRequest request, HttpServletResponse response) {
+
+        // 查询到所有信息
+        List<SLAFaultyEntity> slaFaultyList = slaFaultyService.list();
+        try {
+            // 通过工具类创建writer；true,表示导出excel文件类型为 .xlsx
+            ExcelWriter writer = ExcelUtil.getWriter(true);
+            // 自定义标题名
+            writer.addHeaderAlias("county", "区县");
+
+            writer.write(slaFaultyList,true);
+            // 导出文件名设置
+            String fileName = "在维项目走访巡检投诉故障SLA梳理";
+            // 设置导出Excel的文件格式信息
+            AnalysisExcelUtils.settingExcelFileFormat(response, fileName);
+            ServletOutputStream outputStream = response.getOutputStream();
+            writer.flush(outputStream, true);
+            // 关闭writer，释放内存
+            writer.close();
+            IoUtil.close(outputStream);
+        } catch (Exception e){
+            new RuntimeException();
+        }
+    }
+
 }
