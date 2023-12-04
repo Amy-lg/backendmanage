@@ -13,7 +13,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
         // 连接所有请求，判断token是否合法，决定登录与否
         registry.addInterceptor(jwtInterceptor())
                 .addPathPatterns("/**")
-                .excludePathPatterns("/user/login","/user/register","/**/importInfo","/**/exportInfo","/basicInfo/**");
+                .excludePathPatterns("/api/user/login","/**/import","/**/export");
     }
 
     // 将 JwtInterceptor 注入到容器中，否则在 JwtInterceptor 类中注入的 userService 时会报空指针异常
