@@ -237,6 +237,14 @@ public class SlaController {
             ExcelWriter writer = ExcelUtil.getWriter(true);
             // 自定义标题名
             writer.addHeaderAlias("county", "区县");
+            writer.addHeaderAlias("ictNum", "ICT编号");
+            writer.addHeaderAlias("projectName", "项目名称");
+            writer.addHeaderAlias("customerName", "客户名称");
+            writer.addHeaderAlias("maintenanceEndDate", "维护结束时间");
+            writer.addHeaderAlias("visitFrequency", "走访频率");
+            writer.addHeaderAlias("inspectionFrequency", "巡检频率");
+            writer.addHeaderAlias("complaintSla", "投诉SLA");
+            writer.addHeaderAlias("faultySla", "故障SLA");
 
             writer.write(slaFaultyList,true);
             // 导出文件名设置

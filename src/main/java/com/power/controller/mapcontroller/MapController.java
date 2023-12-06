@@ -112,15 +112,27 @@ public class MapController {
         // 根据区县区分
         Map<String, String> isAcceptRateMap = new HashMap<>();
         Map<String, String> averageDurationOfCountyMap = new HashMap<>();
-        for (String county : ProStaConstant.counties) {
+        // 南湖秀洲纳管率分子、分母统计
+        Long nanHuXuiZhouDenominator = 0L; // 分母
+        Long nanHuXuiZhouNumerator = 0L; // 分子
+        for (String county : ProStaConstant.counties_rate) {
             // 纳管率
             List<Long> isAcceptRateOfCounty = basicInfoService.calculateAcceptRate(county);
             String rate = "0.00";
             if (isAcceptRateOfCounty != null && isAcceptRateOfCounty.size() == 2) {
-                Long denominator = isAcceptRateOfCounty.get(0); // 分母
-                Long numerator = isAcceptRateOfCounty.get(1); // 分子
-                if (denominator != 0) {
-                    rate = String.format("%.2f",(numerator.doubleValue() / denominator.doubleValue()) * 100)  + "%";
+                // 南湖、秀洲算一起 --> 计算结果给到嘉禾
+                if (ProStaConstant.NAN_HU == county || ProStaConstant.XIU_ZHOU == county) {
+                    nanHuXuiZhouDenominator += isAcceptRateOfCounty.get(0);
+                    nanHuXuiZhouNumerator += isAcceptRateOfCounty.get(1);
+                }
+                if (ProStaConstant.JIA_HE == county && nanHuXuiZhouDenominator != 0) {
+                    rate = String.format("%.2f",(nanHuXuiZhouNumerator.doubleValue() / nanHuXuiZhouDenominator.doubleValue()) * 100)  + "%";
+                } else {
+                    Long denominator = isAcceptRateOfCounty.get(0); // 分母
+                    Long numerator = isAcceptRateOfCounty.get(1); // 分子
+                    if (denominator != 0) {
+                        rate = String.format("%.2f",(numerator.doubleValue() / denominator.doubleValue()) * 100)  + "%";
+                    }
                 }
                 isAcceptRateMap.put(county, rate);
             }else {

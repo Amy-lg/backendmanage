@@ -58,4 +58,9 @@ public class ProStaConstant {
             ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,
             ProStaConstant.HAI_YAN, ProStaConstant.XIU_ZHOU, ProStaConstant.NAN_HU};
 
+    // 计算纳管率
+    public static final String[] counties_rate = {ProStaConstant.CUSTOMER,ProStaConstant.PING_HU,
+            ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,
+            ProStaConstant.HAI_YAN, ProStaConstant.XIU_ZHOU, ProStaConstant.NAN_HU,ProStaConstant.JIA_HE};
+
 }

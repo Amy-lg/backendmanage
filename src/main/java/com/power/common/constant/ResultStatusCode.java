@@ -28,13 +28,14 @@ public enum ResultStatusCode {
     ERROR_1(1, "error"),
 
     ERROR_USER_001(001, "用户名或密码错误"),
+    ERROR_USER_002(002, "验证码输入错误，请重新输入！"),
 
 
     FILE_TYPE_ERROR(5004, "文件类型错误"),
     CONDITION_ERROR(5005, "查询条件错误，请重新输入"),
 
 
-    EXCEPTION_USER_1001(1001, "用户信息不存在，请重新输入"),
+    EXCEPTION_USER_1001(1001, "账号或密码错误"),
     ERROR_DEL_USER_1002(1002, "删除失败，请选择要删除的用户编号"),
 
     ERROR_IMPORT(5001, "数据信息导入失败"),
