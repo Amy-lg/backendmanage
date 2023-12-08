@@ -15,8 +15,10 @@ import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationEntity> {
@@ -38,6 +40,58 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
         }
         return null;
     }
+
+
+    /**
+     * 各区县满意、非满数量;满意度平均分
+     * @return
+     */
+    public List<Map<String, String>> calcAverScoreAndCount() {
+
+        ArrayList<Map<String, String>> calcResultList = new ArrayList<>();
+        // 区县满意度数量
+        for (String county : ProStaConstant.counties) {
+            Map<String, String> satisfiedMap = new HashMap<>();
+            QueryWrapper<EvaluationEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("county", county);
+            queryWrapper.isNotNull("service_satisfaction").ne("service_satisfaction", "");
+            // 区县总数(只统计有分数的)
+            long countySum = this.count(queryWrapper);
+            // 和筛选查询条件的数量相同
+            queryWrapper.eq("service_satisfaction", 10);
+            // 区县满意数
+            long satisfiedCount = this.count(queryWrapper);
+            // 区县满意度平均分计算（区县满意数/区县总数）
+            String rate = null;
+            if (countySum != 0) {
+                rate = String.format("%.2f",(((double) satisfiedCount * 10 / (double) countySum)));
+            } else {
+                rate = "0.00";
+            }
+            satisfiedMap.put("区县", county);
+            satisfiedMap.put("满意数", String.valueOf(satisfiedCount));
+            satisfiedMap.put("平均分", rate);
+
+            calcResultList.add(satisfiedMap);
+        }
+        // 区县非满意度数量
+        int indexCount = 0;
+        for (String county : ProStaConstant.counties) {
+            QueryWrapper<EvaluationEntity> queryWrapper = new QueryWrapper<>();
+            // 条件
+            queryWrapper.eq("county", county);
+            queryWrapper.isNotNull("service_satisfaction").ne("service_satisfaction","");
+            queryWrapper.ne("service_satisfaction", 10);
+
+            long unSatisfiedCount = this.count(queryWrapper);
+
+            Map<String, String> stringMap = calcResultList.get(indexCount);
+            stringMap.put("非满意", String.valueOf(unSatisfiedCount));
+            indexCount += 1;
+        }
+        return calcResultList;
+    }
+
 
     /**
      * 数据表分析
@@ -97,7 +151,14 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
                                     break;
                                 case 13:
                                     evaluation.setAfterSalesPhone(cellValue);
-                                    k += 13;
+                                    k += 7;
+                                    break;
+                                case 21:
+                                    evaluation.setIntersectionDate(cellValue);
+                                    break;
+                                case 22:
+                                    evaluation.setContractEndDate(cellValue);
+                                    k += 4;
                                     break;
                                 case 27:
                                     evaluation.setServiceAware(cellValue);
@@ -114,6 +175,10 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
                                 case 31:
                                     evaluation.setCustomerAdvisement(cellValue);
                                     k += 3;
+                                    break;
+                                case 33:
+                                    evaluation.setProblemDescription(cellValue);
+                                    k += 1;
                                     break;
                                 case 35:
                                     evaluation.setRevisitingTime(cellValue);
@@ -188,8 +253,139 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
             IPage<EvaluationEntity> filterPage = this.page(evaluationPages, queryWrapper);
             return filterPage;
         }
+
+        // 1.新增详细信息页面显示条件（售后联系人为空情况，不显示该条数据信息）
+        queryWrapper.isNotNull("after_sales_customer").ne("after_sales_customer", "");
+
+        // 2.去除合同结束的数据信息(相较于当前时间)
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String currentTime = formatter.format(LocalDateTime.now());
+//        System.out.println(currentTime);
+        queryWrapper.gt("contract_end_date", currentTime);
+
+        // 3.当前时间大于交维时间三个月的显示
+        Date now = new Date();
+        Date before3Month;
+        // 获取日历
+        Calendar calendar = Calendar.getInstance();
+        // 当前时间赋值给日历
+        calendar.setTime(now);
+        // 前3个月
+        calendar.add(Calendar.MONTH, -3);
+        // 得到前3月的时间
+        before3Month = calendar.getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String formatBefore3Month = sdf.format(before3Month);
+//        System.out.println("formatBefore3Month = " + formatBefore3Month);
+        queryWrapper.lt("intersection_date", formatBefore3Month);
+
+        // 4.有回访时间无客户意见且六个月之内（和当前时间比较）的数据信息不显示
+        // 显示：无回访时间，有客户意见，六个月之外
+        calendar.add(Calendar.MONTH, -3);
+        Date before6Month = calendar.getTime();
+        String formatBefore6Month = sdf.format(before6Month);
+        queryWrapper.lt("revisiting_time", formatBefore6Month);
+
         // 没有搜索筛选条件，返回所有
-        IPage<EvaluationEntity> allPages = this.page(evaluationPages);
+        IPage<EvaluationEntity> allPages = this.page(evaluationPages, queryWrapper);
+
+
         return allPages;
     }
+
+
+
+    // 整合备份
+    public IPage<EvaluationEntity> queryEvaluation(EvalSearchFilterEntity evalSearchFilter) {
+
+        Integer pageNum = evalSearchFilter.getPageNum();
+        Integer pageSize = evalSearchFilter.getPageSize();
+
+        IPage<EvaluationEntity> evaluationPages = new Page<>(pageNum, pageSize);
+        QueryWrapper<EvaluationEntity> queryWrapper = new QueryWrapper<>();
+
+        // 项目编号
+        String projectNum = evalSearchFilter.getProjectNum();
+        // 项目名称
+        String projectName = evalSearchFilter.getProjectName();
+        // 搜索
+        if (!StrUtil.isEmpty(projectNum) || !StrUtil.isEmpty(projectName)) {
+            if (!StrUtil.isEmpty(projectNum)) {
+                queryWrapper.like("project_num", projectNum);
+            }
+            if (!StrUtil.isEmpty(projectName)) {
+                queryWrapper.like("project_name", projectName);
+            }
+            IPage<EvaluationEntity> searchPage = this.page(evaluationPages, queryWrapper);
+            return searchPage;
+        }
+        // 筛选
+        String county = evalSearchFilter.getCounty();
+        String serviceSatisfaction = evalSearchFilter.getServiceSatisfaction();
+        if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(serviceSatisfaction)) {
+            if (!StrUtil.isEmpty(county)) {
+                queryWrapper.eq("county", county);
+            }
+            if (!StrUtil.isEmpty(serviceSatisfaction)) {
+                // 满意
+                if (ProStaConstant.SATISFIED.equals(serviceSatisfaction)) {
+                    queryWrapper.eq("service_aware", 10).or().isNull("service_aware");
+                    queryWrapper.eq("after_sales_personnel", 10).or().isNull("after_sales_personnel");
+                    queryWrapper.eq("after_sales_response", 10).or().isNull("after_sales_response");
+                    queryWrapper.eq("service_satisfaction", 10);
+                    // 非满意
+                } else if (ProStaConstant.UNSATISFIED.equals(serviceSatisfaction)) {
+                    queryWrapper.ne("service_aware", 10).or().isNull("service_aware");
+                    queryWrapper.ne("after_sales_personnel", 10).or().isNull("after_sales_personnel");
+                    queryWrapper.ne("after_sales_response", 10).or().isNull("after_sales_response");
+                    queryWrapper.ne("service_satisfaction", 10).or().isNull("service_satisfaction");
+                } else {
+                    queryWrapper.eq("service_satisfaction", serviceSatisfaction);
+                }
+            }
+            IPage<EvaluationEntity> filterPage = this.page(evaluationPages, queryWrapper);
+            return filterPage;
+        }
+
+        // 1.新增详细信息页面显示条件（售后联系人为空情况，不显示该条数据信息）
+        queryWrapper.isNotNull("after_sales_customer").ne("after_sales_customer", "");
+
+        // 2.去除合同结束的数据信息(相较于当前时间)
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String currentTime = formatter.format(LocalDateTime.now());
+//        System.out.println(currentTime);
+        queryWrapper.gt("contract_end_date", currentTime);
+
+        // 3.当前时间大于交维时间三个月的显示
+        Date now = new Date();
+        Date before3Month;
+        // 获取日历
+        Calendar calendar = Calendar.getInstance();
+        // 当前时间赋值给日历
+        calendar.setTime(now);
+        // 前3个月
+        calendar.add(Calendar.MONTH, -3);
+        // 得到前3月的时间
+        before3Month = calendar.getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String formatBefore3Month = sdf.format(before3Month);
+//        System.out.println("formatBefore3Month = " + formatBefore3Month);
+        queryWrapper.lt("intersection_date", formatBefore3Month);
+
+        // 4.有回访时间无客户意见且六个月之内（和当前时间比较）的数据信息不显示
+        // 显示：无回访时间，有客户意见，六个月之外
+        calendar.add(Calendar.MONTH, -3);
+        Date before6Month = calendar.getTime();
+        String formatBefore6Month = sdf.format(before6Month);
+        queryWrapper.lt("revisiting_time", formatBefore6Month);
+
+        // 没有搜索筛选条件，返回所有
+        IPage<EvaluationEntity> allPages = this.page(evaluationPages, queryWrapper);
+
+
+        return allPages;
+    }
+
+
+
 }

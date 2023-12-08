@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * 客户满意度控制层
  * @author cyk
@@ -24,7 +27,12 @@ public class EvaluationController {
     @Autowired
     private EvaluationService evaluationService;
 
-    // 客户满意度表信息导入
+
+    /**
+     * 客户满意度表信息导入
+     * @param file
+     * @return
+     */
     @PostMapping("/import")
     public Result importEvaluationFile(@RequestParam MultipartFile file) {
 
@@ -50,6 +58,21 @@ public class EvaluationController {
                 return ResultUtils.success(evalSearchFilterIPage);
             }
             return ResultUtils.success(ResultStatusCode.CONDITION_ERROR.getMsg());
+        }
+        return ResultUtils.success();
+    }
+
+
+    /**
+     * 各区县满意、非满数量;满意度平均分
+     * @return
+     */
+    @GetMapping("/averScoreAndCount")
+    public Result averScoreAndCount() {
+
+        List<Map<String, String>> calcResult = evaluationService.calcAverScoreAndCount();
+        if (calcResult != null) {
+            return ResultUtils.success(calcResult);
         }
         return ResultUtils.success();
     }

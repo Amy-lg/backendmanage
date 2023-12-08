@@ -40,6 +40,14 @@ public class EvaluationEntity implements Serializable {
      */
     private String afterSalesPhone;
     /**
+     * 交维时间
+     */
+    private String intersectionDate;
+    /**
+     * 合同履行结束时间
+     */
+    private String contractEndDate;
+    /**
      * 业务感知
      */
     private String serviceAware;
@@ -59,6 +67,10 @@ public class EvaluationEntity implements Serializable {
      * 客户意见
      */
     private String customerAdvisement;
+    /**
+     * 问题描述
+     */
+    private String problemDescription;
     /**
      * 回访时间
      */
