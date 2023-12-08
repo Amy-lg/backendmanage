@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 验证码工具类
@@ -20,6 +22,8 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/api/verify")
 public class VerifyCodeController {
+
+    public static final Map<String, String> verifyMap = new HashMap<>();
 
 
     /**
@@ -41,7 +45,9 @@ public class VerifyCodeController {
         ServletOutputStream opt = response.getOutputStream();
         shearCaptcha.write(opt);
         // 获取验证码中的文字内容，存储到session中
-        request.getSession().setAttribute("verifyCode", shearCaptcha.getCode());
+        String code = shearCaptcha.getCode();
+        verifyMap.put("captVerifyCode", code);
+        request.getSession().setAttribute("captVerifyCode", shearCaptcha.getCode());
         opt.flush();
         opt.close();
     }

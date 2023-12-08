@@ -1,20 +1,27 @@
 package com.power.controller;
 
+import cn.hutool.captcha.CaptchaUtil;
+import cn.hutool.captcha.ShearCaptcha;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
+import com.auth0.jwt.JWT;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.power.common.Result;
 import com.power.common.constant.ResultStatusCode;
+import com.power.controller.logincontroller.VerifyCodeController;
 import com.power.entity.User;
+import com.power.entity.dto.LoginUserDTO;
 import com.power.entity.dto.UserDTO;
+import com.power.entity.query.UserQuery;
 import com.power.mapper.UserMapper;
 import com.power.service.UserService;
 import com.power.utils.ResultUtils;
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +30,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -38,23 +47,94 @@ public class UserController {
     // 用户登录
     @PostMapping("/login")
     @CrossOrigin
-    public Result userLogin(@RequestBody UserDTO userDTO) {
-        String username = userDTO.getUsername();
-        String password = userDTO.getPassword();
+    public Result userLogin(@RequestBody LoginUserDTO loginUserDTO,
+                            HttpServletRequest request) {
+        // 生成验证码
+        Map<String, String> verifyMap = VerifyCodeController.verifyMap;
+        String captVerifyCode = verifyMap.get("captVerifyCode");
+
+        String username = loginUserDTO.getUsername();
+        String password = loginUserDTO.getPassword();
         if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
             return ResultUtils.error(ResultStatusCode.ERROR_USER_001, "用户名或密码不能为空");
         }
-        UserDTO loginUser = userService.userLogin(userDTO);
+        UserDTO loginUser = userService.userLogin(loginUserDTO, request, captVerifyCode);
+        List<Object> resultList = new ArrayList<>();
+        if (loginUser == null) {
+            resultList.add(ResultStatusCode.ERROR_USER_002.getCode());
+            resultList.add(ResultStatusCode.ERROR_USER_002.getMsg());
+            return ResultUtils.success(resultList);
+        }
         if (loginUser.getUsername() != null && loginUser.getPassword() != null) {
-            return ResultUtils.success(loginUser);
+            resultList.add(ResultStatusCode.OK_0.getCode());
+            resultList.add(loginUser);
+            return ResultUtils.success(resultList);
         } else {
-            return ResultUtils.error(ResultStatusCode.EXCEPTION_USER_1001, "用户信息不存在");
+            resultList.add(ResultStatusCode.EXCEPTION_USER_1001.getCode());
+            resultList.add(ResultStatusCode.EXCEPTION_USER_1001.getMsg());
+            return ResultUtils.success(resultList);
         }
     }
 
-    // 查询所有用户
-    @GetMapping
-    public List<User> findAll() {
+    /**
+     * 生成验证码
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    private void verifyShearCaptcha(HttpServletRequest request, HttpServletResponse response){
+
+        response.setContentType("image/jpeg");
+        response.setHeader("pragma", "no-cache");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setDateHeader("Expires", 0);
+        // 定义图形验证码的长、宽、验证码字符数、干扰线宽度
+        ShearCaptcha shearCaptcha = CaptchaUtil.createShearCaptcha(400, 100, 5, 6);
+        // 图形验证码写出，可以写出到文件或者写出到流
+        ServletOutputStream opt = null;
+        try {
+            opt = response.getOutputStream();
+            shearCaptcha.write(opt);
+            // 获取验证码中的文字内容，存储到session中
+            request.getSession().setAttribute("verifyCode", shearCaptcha.getCode());
+            opt.flush();
+            opt.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * 页面关闭后，复制链接重新打开，token验证
+     * @param request
+     * @param verifyToken
+     * @return
+     */
+    @PostMapping("/rebuild")
+    public Result againLogin(HttpServletRequest request, @RequestBody String verifyToken) {
+
+        String reqToken = request.getHeader("token").toString();
+        if (verifyToken != null && !"".equals(verifyToken)) {
+            String substringToken = verifyToken.substring(0, verifyToken.length() - 1);
+            if (reqToken.equals(substringToken)) {
+//            User currentUser = TokenUtils.getCurrentUser();
+                String userId = JWT.decode(verifyToken).getAudience().get(0);
+                User currentUser = userService.getById(Integer.valueOf(userId));
+                return ResultUtils.success(currentUser);
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * 查询所有用户
+     * @param userQuery
+     * @return
+     */
+    @PostMapping("/findLoginAll")
+    public Result findAll(@RequestBody UserQuery userQuery) {
         /* mybatis的实现方法
         List<User> all = userMapper.findAll();
         if (!all.isEmpty()) {
@@ -64,15 +144,33 @@ public class UserController {
         }*/
 
         // mybatis-plus 中查询所有
-        List<User> users = userService.list();
-        return users;
+        IPage<User> loginUser = userService.findOrSearch(userQuery);
+        if (loginUser != null) {
+            return ResultUtils.success(loginUser);
+        }
+        return ResultUtils.success();
     }
 
-    // 新增/更新用户信息
-    @PostMapping
-    public boolean save(@RequestBody User user) {
-        boolean update = userService.updateUser(user);
-        return update;
+
+    /**
+     * 新增/更新用户信息(admin才能新增)
+     * @param user
+     * @return
+     */
+    @PostMapping("/addLoginUser")
+    public Result save(@RequestBody User user) {
+
+        if (user != null) {
+            String addResult = userService.addNewUser(user);
+            if (!addResult.isBlank()) {
+//                List<Object> respData = Arrays.asList();
+                List<Object> list = new ArrayList<>();
+                list.add(ResultStatusCode.SUCCESS_ADD_LOGIN_USER.getCode());
+                list.add(addResult);
+                return ResultUtils.success(list);
+            }
+        }
+        return ResultUtils.error(5006, "新增用户失败，信息不能为空");
     }
 
     // 删除
@@ -87,11 +185,20 @@ public class UserController {
         return delStatus;
     }
 
-    // 批量删除
+
+    /**
+     * 批量删除(管理员权限使用)
+     * @param ids
+     * @return
+     */
     @PostMapping("/batchDel")
-    public boolean batchDel(@RequestBody List<Integer> ids) {
-        boolean batStatus = userService.removeBatchByIds(ids);
-        return batStatus;
+    public Result batchDel(@RequestBody List<Integer> ids) {
+
+        String deleteInfo = userService.deleteBatch(ids);
+        if (deleteInfo != null && "".equals(deleteInfo)) {
+            return ResultUtils.success(deleteInfo);
+        }
+        return ResultUtils.success();
     }
 
     // 分页查询 -- mybatis的实现

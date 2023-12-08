@@ -17,10 +17,30 @@ public class User {
     @TableId(value = "id",type = IdType.AUTO)
     private Integer id;
     private String username;
-    @JsonIgnore
+    @JsonIgnore(value = false)
     private String password;
-    private String nickname;
-    private String email;
+    /**
+     * 真实姓名
+     */
+    private String realName;
+    /**
+     * 联系电话
+     */
     private String phone;
-    private String address;
+    /**
+     * 所属部门
+     */
+    private String department;
+    /**
+     * 岗位
+     */
+    private String post;
+    /**
+     * 角色；管理员 or 普通用户
+     */
+    private String role;
+    /**
+     * 状态
+     */
+    private String loginStatus;
 }
