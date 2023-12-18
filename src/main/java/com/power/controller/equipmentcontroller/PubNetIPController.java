@@ -115,7 +115,7 @@ public class PubNetIPController {
      * @return
      */
     @PostMapping("/searchOrFilterInfo")
-    public Result searchIntranetIPInfo(@RequestBody DialFilterQuery dialFilterQuery) {
+    public Result searchPubNetIPInfo(@RequestBody DialFilterQuery dialFilterQuery) {
 
         IPage<PubNetIPEntity> pubNetIPEntityIPage = pubNetIPService.searchOrFilter(dialFilterQuery);
         if (pubNetIPEntityIPage != null) {
@@ -124,4 +124,19 @@ public class PubNetIPController {
         return ResultUtils.success(ResultStatusCode.CONDITION_ERROR.getMsg());
     }
 
+
+    /**
+     * 数据删除（没有使用假删除方式）
+     * @param ids
+     * @return
+     */
+    @PostMapping("/delDataInfo")
+    public Result removePubNetIPInfo(@RequestBody List<Integer> ids) {
+
+        List<Object> delResult = pubNetIPService.delBatchByIds(ids);
+        if (delResult != null && delResult.size() != 0) {
+            return ResultUtils.success(delResult);
+        }
+        return ResultUtils.success();
+    }
 }

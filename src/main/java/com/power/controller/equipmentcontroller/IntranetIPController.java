@@ -156,4 +156,20 @@ public class IntranetIPController {
         }
         return ResultUtils.success();
     }
+
+
+    /**
+     * 数据删除（没有使用假删除方式）
+     * @param ids
+     * @return
+     */
+    @PostMapping("/delDataInfo")
+    public Result removeIntranetIPInfo(@RequestBody List<Integer> ids) {
+
+        List<Object> delResult = intranetIPService.delBatchByIds(ids);
+        if (delResult != null && delResult.size() != 0) {
+            return ResultUtils.success(delResult);
+        }
+        return ResultUtils.success();
+    }
 }

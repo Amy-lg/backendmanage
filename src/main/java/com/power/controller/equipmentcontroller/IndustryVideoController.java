@@ -94,4 +94,18 @@ public class IndustryVideoController {
     }
 
 
+    /**
+     * 数据删除（没有使用假删除方式）
+     * @param ids
+     * @return
+     */
+    @PostMapping("/delDataInfo")
+    public Result removeIndustryVideoInfo(@RequestBody List<Integer> ids) {
+
+        List<Object> delResult = videoService.delBatchByIds(ids);
+        if (delResult != null && delResult.size() != 0) {
+            return ResultUtils.success(delResult);
+        }
+        return ResultUtils.success();
+    }
 }

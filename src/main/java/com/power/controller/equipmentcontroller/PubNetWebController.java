@@ -105,12 +105,28 @@ public class PubNetWebController {
      * @return
      */
     @PostMapping("/searchOrFilterInfo")
-    public Result searchIntranetIPInfo(@RequestBody DialFilterQuery dialFilterQuery) {
+    public Result searchPubNetInfo(@RequestBody DialFilterQuery dialFilterQuery) {
 
         IPage<PubNetWebEntity> pubNetWebEntityIPage = pubNetWebService.searchOrFilter(dialFilterQuery);
         if (pubNetWebEntityIPage != null) {
             return ResultUtils.success(pubNetWebEntityIPage);
         }
         return ResultUtils.success(ResultStatusCode.CONDITION_ERROR.getMsg());
+    }
+
+
+    /**
+     * 数据删除（没有使用假删除方式）
+     * @param ids
+     * @return
+     */
+    @PostMapping("/delDataInfo")
+    public Result removePubNetInfo(@RequestBody List<Integer> ids) {
+
+        List<Object> delResult = pubNetWebService.delBatchByIds(ids);
+        if (delResult != null && delResult.size() != 0) {
+            return ResultUtils.success(delResult);
+        }
+        return ResultUtils.success();
     }
 }

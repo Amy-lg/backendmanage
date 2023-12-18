@@ -334,4 +334,24 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
     }
 
 
+    /**
+     * 删除操作（未使用假删除，操作后数据库信息将直接删除）
+     * @param ids 删除数据的id
+     * @return
+     */
+    public List<Object> delBatchByIds(List<Integer> ids) {
+
+        List<Object> delResultSta = new ArrayList<>();
+        if (ids != null && ids.size() >= 1) {
+            boolean removeStatus = removeBatchByIds(ids);
+            if (removeStatus) {
+                delResultSta.add(ResultStatusCode.SUCCESS_DELETE_USER.getCode());
+                delResultSta.add(ResultStatusCode.SUCCESS_DELETE_USER.getMsg());
+                return delResultSta;
+            }
+        }
+        delResultSta.add(ResultStatusCode.ERROR_DEL_USER_1002.getCode());
+        delResultSta.add(ResultStatusCode.ERROR_DEL_USER_1002.getMsg());
+        return delResultSta;
+    }
 }
