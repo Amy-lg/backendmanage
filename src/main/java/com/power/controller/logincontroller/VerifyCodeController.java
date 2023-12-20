@@ -1,6 +1,7 @@
 package com.power.controller.logincontroller;
 
 import cn.hutool.captcha.CaptchaUtil;
+import cn.hutool.captcha.CircleCaptcha;
 import cn.hutool.captcha.ShearCaptcha;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +24,7 @@ import java.util.Map;
 @RequestMapping("/api/verify")
 public class VerifyCodeController {
 
-    public static final Map<String, String> verifyMap = new HashMap<>();
+    public static final Map<String, Object> verifyMap = new HashMap<>();
 
 
     /**
@@ -39,15 +40,20 @@ public class VerifyCodeController {
         response.setHeader("pragma", "no-cache");
         response.setHeader("Cache-Control", "no-cache");
         response.setDateHeader("Expires", 0);
-        // 定义图形验证码的长、宽、验证码字符数、干扰线宽度
-        ShearCaptcha shearCaptcha = CaptchaUtil.createShearCaptcha(400, 100, 5, 6);
+        // 定义干扰线图形验证码的长、宽、验证码字符数、干扰线宽度
+        // ShearCaptcha shearCaptcha = CaptchaUtil.createShearCaptcha(400, 100, 5, 6);
+        // 圆圈干扰验证码
+        CircleCaptcha circleCaptcha = CaptchaUtil.createCircleCaptcha(400, 100, 4, 20);
         // 图形验证码写出，可以写出到文件或者写出到流
         ServletOutputStream opt = response.getOutputStream();
-        shearCaptcha.write(opt);
+        circleCaptcha.write(opt);
         // 获取验证码中的文字内容，存储到session中
-        String code = shearCaptcha.getCode();
+        String code = circleCaptcha.getCode();
+        // 设置验证码过期时间为，3分钟后过期
+        long expirationTime = System.currentTimeMillis() + 1000 * 60 * 3;
         verifyMap.put("captVerifyCode", code);
-        request.getSession().setAttribute("captVerifyCode", shearCaptcha.getCode());
+        verifyMap.put("expTime", expirationTime);
+        request.getSession().setAttribute("captVerifyCode", code);
         opt.flush();
         opt.close();
     }

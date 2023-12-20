@@ -28,7 +28,7 @@ public enum ResultStatusCode {
     ERROR_1(1, "error"),
 
     ERROR_USER_001(001, "用户名或密码错误"),
-    ERROR_USER_002(002, "验证码输入错误，请重新输入！"),
+    ERROR_USER_002(002, "验证码输入错误或已过期，请刷新后重新输入"),
 
 
     FILE_TYPE_ERROR(5004, "文件类型错误"),

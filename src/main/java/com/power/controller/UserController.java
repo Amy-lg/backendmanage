@@ -19,6 +19,8 @@ import com.power.entity.dto.UserDTO;
 import com.power.entity.query.UserQuery;
 import com.power.mapper.UserMapper;
 import com.power.service.UserService;
+import com.power.utils.AesUtil;
+import com.power.utils.Md5Util;
 import com.power.utils.ResultUtils;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,21 +47,36 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // 用户登录
+
+    /**
+     * 用户登录
+     * @CrossOrigin // 此注解为局部方法跨域，处理方法比较细，使用比较少
+     * @param loginUserDTO
+     * @param request
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     @PostMapping("/login")
-    @CrossOrigin
     public Result userLogin(@RequestBody LoginUserDTO loginUserDTO,
-                            HttpServletRequest request) {
+                            HttpServletRequest request) throws NoSuchAlgorithmException {
         // 生成验证码
-        Map<String, String> verifyMap = VerifyCodeController.verifyMap;
-        String captVerifyCode = verifyMap.get("captVerifyCode");
+        Map<String, Object> verifyMap = VerifyCodeController.verifyMap;
+        // String captVerifyCode = (String) verifyMap.get("captVerifyCode");
 
         String username = loginUserDTO.getUsername();
         String password = loginUserDTO.getPassword();
+
+        // 解密
+        String decryptPwd = AesUtil.decrypt(password);
+        // MD5加密
+        String md5Pwd = Md5Util.encrypt(decryptPwd);
+        // System.out.println("Md5Pwd = " + md5Pwd);
+        loginUserDTO.setPassword(md5Pwd);
+
         if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
             return ResultUtils.error(ResultStatusCode.ERROR_USER_001, "用户名或密码不能为空");
         }
-        UserDTO loginUser = userService.userLogin(loginUserDTO, request, captVerifyCode);
+        UserDTO loginUser = userService.userLogin(loginUserDTO, request, verifyMap);
         List<Object> resultList = new ArrayList<>();
         if (loginUser == null) {
             resultList.add(ResultStatusCode.ERROR_USER_002.getCode());

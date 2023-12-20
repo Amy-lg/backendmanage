@@ -12,11 +12,13 @@ import com.power.entity.dto.UserDTO;
 import com.power.entity.query.UserQuery;
 import com.power.exception.ServiceException;
 import com.power.mapper.UserMapper;
+import com.power.utils.Md5Util;
 import com.power.utils.TokenUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserService extends ServiceImpl<UserMapper, User> {
@@ -31,36 +33,51 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     }
 
     public UserDTO userLogin(LoginUserDTO loginUserDTO, HttpServletRequest request,
-                             String captVerifyCode) {
+                             Map<String, Object> verifyMap) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        // 前端传入需要验证的验证码
-        String captchaCode = loginUserDTO.getCaptchaCode();
-        // 先判断验证码是否正确
-        if (captVerifyCode != null && captVerifyCode.equals(captchaCode)) {
-            queryWrapper.eq("username", loginUserDTO.getUsername());
-            queryWrapper.eq("password", loginUserDTO.getPassword());
-            User loginUser;
-            UserDTO userDTO = new UserDTO();
-            try {
-                loginUser = getOne(queryWrapper);
-            }catch (Exception e) {
-                throw new ServiceException(ResultStatusCode.ERROR_1.getCode(), "系统错误");
-            }
-            // 如果登录用户不为空，直接登录
-            if (loginUser != null) {
-                BeanUtil.copyProperties(loginUser, userDTO, true);
-                String token = TokenUtils.genToken(loginUser.getId().toString(), loginUser.getPassword());
-                userDTO.setToken(token);
-                return userDTO;
+        // 获取后端存储的验证码和过期时间
+        String captVerifyCode = (String) verifyMap.get("captVerifyCode");
+        long expirationTime = (long) verifyMap.get("expTime");
+        if (!(System.currentTimeMillis() > expirationTime)) {
+            // 前端传入需要验证的验证码
+            String captchaCode = loginUserDTO.getCaptchaCode();
+            // 先判断验证码是否正确
+            if (captVerifyCode != null && captVerifyCode.equals(captchaCode)) {
+                // 将验证码清除
+                if (verifyMap.containsKey(captVerifyCode)) {
+                    verifyMap.remove("captVerifyCode");
+                }
+                if (verifyMap.containsKey("expTime")) {
+                    verifyMap.remove("expTime");
+                }
+                request.getSession().removeAttribute("captVerifyCode");
+
+                queryWrapper.eq("username", loginUserDTO.getUsername());
+                queryWrapper.eq("password", loginUserDTO.getPassword());
+                User loginUser;
+                UserDTO userDTO = new UserDTO();
+                try {
+                    loginUser = getOne(queryWrapper);
+                }catch (Exception e) {
+                    throw new ServiceException(ResultStatusCode.ERROR_1.getCode(), "系统错误");
+                }
+                // 如果登录用户不为空，直接登录
+                if (loginUser != null) {
+                    BeanUtil.copyProperties(loginUser, userDTO, true);
+                    String token = TokenUtils.genToken(loginUser.getId().toString(), loginUser.getPassword());
+                    userDTO.setToken(token);
+                    return userDTO;
+                } else {
+                    // 否则，将传进来的userDTO置为空对象返回，由controller层再次进行一个判断
+                    userDTO.setUsername(null);
+                    userDTO.setPassword(null);
+                    return userDTO;
+                }
             } else {
-                // 否则，将传进来的userDTO置为空对象返回，由controller层再次进行一个判断
-                userDTO.setUsername(null);
-                userDTO.setPassword(null);
-                return userDTO;
+                return null;
             }
-        } else {
-            return null;
         }
+        return null;
     }
 
 
@@ -98,6 +115,10 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         User currentUser = TokenUtils.getCurrentUser();
         String role = currentUser.getRole();
         if (!role.isBlank() && role.contains("超级管理员")) {
+            // MD5加密
+            String md5Pwd = Md5Util.encrypt(user.getPassword());
+            System.out.println("Md5Pwd = " + md5Pwd);
+            user.setPassword(md5Pwd);
             // 登录用户为管理员，可以添加
             this.saveOrUpdate(user);
             return ResultStatusCode.SUCCESS_ADD_LOGIN_USER.getMsg();

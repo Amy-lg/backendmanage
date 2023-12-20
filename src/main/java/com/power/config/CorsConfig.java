@@ -20,9 +20,16 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.addAllowedOrigin("http://localhost:8080"); // 1 设置访问源地址
+
+        // 设置多个访问源地址
+        corsConfiguration.addAllowedOrigin("http://10.220.150.4:9090");
+        corsConfiguration.addAllowedOrigin("http://localhost:8080");
+        corsConfiguration.addAllowedOrigin("http://39.175.164.200:9090");
+
         corsConfiguration.addAllowedHeader("*"); // 2 设置访问源请求头
         corsConfiguration.addAllowedMethod("*"); // 3 设置访问源请求方法
+        // 是否允许请求带有验证信息
+        // corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setMaxAge(MAX_AGE);
         source.registerCorsConfiguration("/**", corsConfiguration); // 4 对接口配置跨域设置
         return new CorsFilter(source);
