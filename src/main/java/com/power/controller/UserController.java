@@ -59,9 +59,6 @@ public class UserController {
     @PostMapping("/login")
     public Result userLogin(@RequestBody LoginUserDTO loginUserDTO,
                             HttpServletRequest request) throws NoSuchAlgorithmException {
-        // 生成验证码
-        Map<String, Object> verifyMap = VerifyCodeController.verifyMap;
-        // String captVerifyCode = (String) verifyMap.get("captVerifyCode");
 
         String username = loginUserDTO.getUsername();
         String password = loginUserDTO.getPassword();
@@ -70,13 +67,12 @@ public class UserController {
         String decryptPwd = AesUtil.decrypt(password);
         // MD5加密
         String md5Pwd = Md5Util.encrypt(decryptPwd);
-        // System.out.println("Md5Pwd = " + md5Pwd);
         loginUserDTO.setPassword(md5Pwd);
 
         if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
             return ResultUtils.error(ResultStatusCode.ERROR_USER_001, "用户名或密码不能为空");
         }
-        UserDTO loginUser = userService.userLogin(loginUserDTO, request, verifyMap);
+        UserDTO loginUser = userService.userLogin(loginUserDTO, request);
         List<Object> resultList = new ArrayList<>();
         if (loginUser == null) {
             resultList.add(ResultStatusCode.ERROR_USER_002.getCode());

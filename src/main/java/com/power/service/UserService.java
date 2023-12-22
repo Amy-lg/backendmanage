@@ -32,26 +32,20 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         return saveOrUpdate(user);
     }
 
-    public UserDTO userLogin(LoginUserDTO loginUserDTO, HttpServletRequest request,
-                             Map<String, Object> verifyMap) {
+    public UserDTO userLogin(LoginUserDTO loginUserDTO, HttpServletRequest request) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         // 获取后端存储的验证码和过期时间
-        String captVerifyCode = (String) verifyMap.get("captVerifyCode");
-        long expirationTime = (long) verifyMap.get("expTime");
+        String sessionCaptVerifyCode = (String) request.getSession().getAttribute("sessionCaptVerifyCode");
+        long expirationTime = (long) request.getSession().getAttribute("expTime");
         if (!(System.currentTimeMillis() > expirationTime)) {
             // 前端传入需要验证的验证码
             String captchaCode = loginUserDTO.getCaptchaCode();
             // 先判断验证码是否正确
-            if (captVerifyCode != null && captVerifyCode.equals(captchaCode)) {
+            if (sessionCaptVerifyCode != null && sessionCaptVerifyCode.equals(captchaCode)) {
                 // 将验证码清除
-                if (verifyMap.containsKey(captVerifyCode)) {
-                    verifyMap.remove("captVerifyCode");
-                }
-                if (verifyMap.containsKey("expTime")) {
-                    verifyMap.remove("expTime");
-                }
                 request.getSession().removeAttribute("captVerifyCode");
-
+                request.getSession().removeAttribute("expTime");
+                // 验证用户信息
                 queryWrapper.eq("username", loginUserDTO.getUsername());
                 queryWrapper.eq("password", loginUserDTO.getPassword());
                 User loginUser;

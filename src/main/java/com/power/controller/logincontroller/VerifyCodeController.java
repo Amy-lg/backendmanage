@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 验证码工具类
@@ -24,7 +22,7 @@ import java.util.Map;
 @RequestMapping("/api/verify")
 public class VerifyCodeController {
 
-    public static final Map<String, Object> verifyMap = new HashMap<>();
+    // public static final Map<String, Object> verifyMap = new HashMap<>();
 
 
     /**
@@ -51,9 +49,10 @@ public class VerifyCodeController {
         String code = circleCaptcha.getCode();
         // 设置验证码过期时间为，3分钟后过期
         long expirationTime = System.currentTimeMillis() + 1000 * 60 * 3;
-        verifyMap.put("captVerifyCode", code);
-        verifyMap.put("expTime", expirationTime);
-        request.getSession().setAttribute("captVerifyCode", code);
+        // verifyMap.put("captVerifyCode", code);
+        // verifyMap.put("expTime", expirationTime);
+        request.getSession().setAttribute("sessionCaptVerifyCode", code);
+        request.getSession().setAttribute("expTime", expirationTime);
         opt.flush();
         opt.close();
     }

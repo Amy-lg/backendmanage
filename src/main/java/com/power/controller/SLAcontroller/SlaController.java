@@ -6,6 +6,7 @@ import cn.hutool.poi.excel.ExcelWriter;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
 import com.power.entity.slaentity.SLAFaultyEntity;
+import com.power.entity.slaentity.filter.SlaFaultyFilter;
 import com.power.service.SLAservice.SLAFaultyService;
 import com.power.service.basicservice.ProjectBasicInfoService;
 import com.power.service.equipmentservice.IndustryVideoService;
@@ -56,7 +57,11 @@ public class SlaController {
     @Autowired
     private TOrderFileService tOrderService;
 
-    // 纳管率计算
+
+    /**
+     * 纳管率计算
+     * @return
+     */
     @GetMapping("/calSlaOnlineRate")
     public Result isAcceptRate() {
 
@@ -168,6 +173,22 @@ public class SlaController {
         IPage<SLAFaultyEntity> slaFaultyPages = slaFaultyService.querySLAFaulty(pageNum, pageSize, ictNum);
         if (slaFaultyPages != null) {
             return ResultUtils.success(slaFaultyPages);
+        }
+        return ResultUtils.success();
+    }
+
+
+    /**
+     * 筛选、搜索
+     * @param slaFaultyFilter 筛选条件类
+     * @return 筛选结果
+     */
+    @PostMapping("/slaFf")
+    public Result filterByCondition(@RequestBody SlaFaultyFilter slaFaultyFilter) {
+
+        IPage<SLAFaultyEntity> filterResult = slaFaultyService.filterSlaFaulty(slaFaultyFilter);
+        if (filterResult != null) {
+            return ResultUtils.success(filterResult);
         }
         return ResultUtils.success();
     }

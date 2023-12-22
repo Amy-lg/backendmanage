@@ -1,11 +1,13 @@
 package com.power.service.SLAservice;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.slaentity.SLAFaultyEntity;
+import com.power.entity.slaentity.filter.SlaFaultyFilter;
 import com.power.mapper.SLAmapper.SLAFaultyMapper;
 import com.power.utils.AnalysisExcelUtils;
 import org.apache.poi.ss.usermodel.*;
@@ -229,6 +231,50 @@ public class SLAFaultyService extends ServiceImpl<SLAFaultyMapper, SLAFaultyEnti
                 updateResultSta.add(ResultStatusCode.SUCCESS_UPDATE_INFO.getMsg());
                 return updateResultSta;
             }
+        }
+        return null;
+    }
+
+
+    /**
+     * 筛选、搜索
+     * @param slaFaultyFilter
+     * @return
+     */
+    public IPage<SLAFaultyEntity> filterSlaFaulty(SlaFaultyFilter slaFaultyFilter) {
+
+        if (slaFaultyFilter != null) {
+            Integer pageNum = slaFaultyFilter.getPageNum();
+            Integer pageSize = slaFaultyFilter.getPageSize();
+            QueryWrapper<SLAFaultyEntity> queryWrapper = new QueryWrapper<>();
+            IPage<SLAFaultyEntity> page = new Page<>(pageNum, pageSize);
+
+            // 搜索
+            String ictNum = slaFaultyFilter.getIctNum();
+            if (StringUtils.hasLength(ictNum)) {
+                queryWrapper.eq("ict_num", ictNum);
+                IPage<SLAFaultyEntity> searchPage = this.page(page, queryWrapper);
+                return searchPage;
+            }
+            // 获取筛选条件
+            String county = slaFaultyFilter.getCounty();
+            String visitFrequency = slaFaultyFilter.getVisitFrequency();
+            String inspectionFrequency = slaFaultyFilter.getInspectionFrequency();
+            if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(visitFrequency) || !StrUtil.isEmpty(inspectionFrequency)) {
+                if (!StrUtil.isEmpty(county)) {
+                    queryWrapper.eq("county", county);
+                }
+                if (!StrUtil.isEmpty(visitFrequency)) {
+                    queryWrapper.eq("visit_frequency", visitFrequency);
+                }
+                if (!StrUtil.isEmpty(inspectionFrequency)) {
+                    queryWrapper.eq("inspection_frequency", inspectionFrequency);
+                }
+                IPage<SLAFaultyEntity> filterPage = page(page, queryWrapper);
+                return filterPage;
+            }
+            IPage<SLAFaultyEntity> searchAllPage = this.page(page);
+            return page;
         }
         return null;
     }

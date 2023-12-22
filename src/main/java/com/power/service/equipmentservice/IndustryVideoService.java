@@ -129,7 +129,7 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
                         }
 
                         // 循环遍历数据内容
-                        for (int j = 1; j < sheet.getLastRowNum(); j++) {
+                        for (int j = 1; j <= sheet.getLastRowNum(); j++) {
                             Row contentRow = sheet.getRow(j);
                             short lastCellNum = contentRow.getLastCellNum();
                             // 此行没有数据，继续循环其他行
