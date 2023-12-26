@@ -43,7 +43,9 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
 //            this.saveBatch(pubNetWebEntityList, 100);
                 for (PubNetWebEntity pubNetWeb : pubNetWebEntityList) {
                     QueryWrapper<PubNetWebEntity> queryWrapper = new QueryWrapper<>();
+                    // 使用 项目名称+web链接 确定数据的唯一性
                     queryWrapper.eq("project_name", pubNetWeb.getProjectName());
+                    queryWrapper.eq("destination_address", pubNetWeb.getDestinationAddress());
                     this.saveOrUpdate(pubNetWeb, queryWrapper);
                 }
                 return ResultStatusCode.SUCCESS_UPLOAD.getMsg();

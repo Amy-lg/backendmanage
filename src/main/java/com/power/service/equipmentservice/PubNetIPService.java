@@ -38,7 +38,9 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
             if (pubNetIPEntityList != null) {
                 for (PubNetIPEntity pubNetIp : pubNetIPEntityList) {
                     QueryWrapper<PubNetIPEntity> queryWrapper = new QueryWrapper<>();
+                    // 通过 项目名称+目标IP 确定数据的唯一性
                     queryWrapper.eq("project_name", pubNetIp.getProjectName());
+                    queryWrapper.eq("destination_ip", pubNetIp.getDestinationIp());
                     this.saveOrUpdate(pubNetIp, queryWrapper);
                 }
 //            this.saveBatch(pubNetIPEntityList, 100);
