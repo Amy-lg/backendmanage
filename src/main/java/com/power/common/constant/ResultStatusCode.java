@@ -21,6 +21,7 @@ public enum ResultStatusCode {
     SUCCESS_UPDATE_INFO(204, "更新数据信息成功"),
     SUCCESS_ADD_LOGIN_USER(205, "用户信息更新成功"),
     SUCCESS_DELETE_USER(206, "删除用户成功"),
+    SUCCESS_MODIFY_PWD(207, "密码修改成功"),
 
     /**
      * 错误
@@ -29,6 +30,7 @@ public enum ResultStatusCode {
 
     ERROR_USER_001(001, "用户名或密码错误"),
     ERROR_USER_002(002, "验证码输入错误或已过期，请刷新后重新输入"),
+    ERROR_USER_003(003, "旧密码输入错误，请重新输入"),
 
 
     FILE_TYPE_ERROR(5004, "文件类型错误"),
