@@ -219,6 +219,9 @@ public class AnalysisExcelUtils {
         ArrayList<String> titles = new ArrayList<>();
         // 标题行
         Row titleRow = sheet.getRow(0);
+        if (titleRow == null) {
+            return titles;
+        }
         // excel中数据有多少列
         short columns = titleRow.getLastCellNum();
         for (int j = 0; j < columns; j++) {

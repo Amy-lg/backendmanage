@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.basic.BasicInfoEntity;
 import com.power.entity.fault.FaultTrackingEntity;
 import com.power.entity.fault.filtersearch.FaultFilterSearch;
+import com.power.entity.fault.updateinfo.UpdateFaultTracking;
 import com.power.mapper.faultmapper.FaultTrackingMapper;
 import com.power.utils.AnalysisExcelUtils;
 import org.apache.poi.ss.usermodel.*;
@@ -159,5 +161,72 @@ public class FaultTrackingService extends ServiceImpl<FaultTrackingMapper, Fault
         // 如果不是筛选 or 检索，检索所有返回
         IPage<FaultTrackingEntity> allPage = this.page(resultPages);
         return allPage;
+    }
+
+
+    /**
+     * 更新数据字段信息
+     * @param updateFaultTracking
+     * @return
+     */
+    public List<Object> updateFaultInfo(UpdateFaultTracking updateFaultTracking) {
+
+        ArrayList<Object> updFaultList = new ArrayList<>();
+        if (updateFaultTracking != null) {
+            FaultTrackingEntity selFaultInfoById = getById(updateFaultTracking.getId());
+            if (selFaultInfoById != null) {
+                // 预计修复日期
+                String expRepairDate = updateFaultTracking.getExpRepairDate();
+                selFaultInfoById.setExpRepairDate(expRepairDate != null ? expRepairDate :
+                        selFaultInfoById.getExpRepairDate());
+                // 进度状态
+                String progressStatus = updateFaultTracking.getProgressStatus();
+                selFaultInfoById.setProgressStatus(progressStatus != null ? progressStatus :
+                        selFaultInfoById.getProgressStatus());
+                // 备注
+                String notes = updateFaultTracking.getNotes();
+                selFaultInfoById.setNotes(notes != null ? notes : selFaultInfoById.getNotes());
+                // 更新保存
+                boolean updateSta = saveOrUpdate(selFaultInfoById);
+                if (updateSta) {
+                    updFaultList.add(ResultStatusCode.SUCCESS_UPDATE_INFO.getCode());
+                    updFaultList.add(ResultStatusCode.SUCCESS_UPDATE_INFO.getMsg());
+                    return updFaultList;
+                }
+            }
+        }
+        updFaultList.add(ResultStatusCode.ERROR_UPDATE_INFO.getCode());
+        updFaultList.add(ResultStatusCode.ERROR_UPDATE_INFO.getMsg());
+        return updFaultList;
+    }
+
+
+    /**
+     * 县分填充
+     * @param basicInfoEntityList 项目信息表数据
+     * @return
+     */
+    public String updateProjectCounty(List<BasicInfoEntity> basicInfoEntityList) {
+
+        // 获取故障追踪数据信息内容
+        List<FaultTrackingEntity> faultTrackingEntityList = list();
+        if (faultTrackingEntityList.isEmpty() || faultTrackingEntityList == null) {
+            return "故障追踪表暂无数据信息";
+        }
+        for (FaultTrackingEntity fault : faultTrackingEntityList) {
+            String faultProjectName = fault.getProjectName();
+            for (BasicInfoEntity basicInfo : basicInfoEntityList) {
+                String basicProjectName = basicInfo.getIctProjectName();
+                if (faultProjectName != null && !"".equals(faultProjectName) &&
+                        basicProjectName.equals(faultProjectName)) {
+                    QueryWrapper<FaultTrackingEntity> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.eq("project_name", faultProjectName);
+                    String basicInfoCounty = basicInfo.getCounty();
+                    fault.setProjectCounty(basicInfoCounty);
+                    saveOrUpdate(fault, queryWrapper);
+                }
+            }
+        }
+        return "故障跟踪区县信息更新成功";
     }
 }

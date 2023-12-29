@@ -12,13 +12,15 @@ import com.power.entity.dto.UserDTO;
 import com.power.entity.query.UserQuery;
 import com.power.exception.ServiceException;
 import com.power.mapper.UserMapper;
+import com.power.utils.AesUtil;
 import com.power.utils.Md5Util;
 import com.power.utils.TokenUtils;
+import com.power.vo.user.UpdUserInfoVO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class UserService extends ServiceImpl<UserMapper, User> {
@@ -165,6 +167,44 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         }catch (Exception e) {
             return false;
         }
+    }
+
+
+    /**
+     * 密码修改
+     * @param updUserInfoVO
+     * @return
+     */
+    public List<Object> modifyPwdByFirstLogin(UpdUserInfoVO updUserInfoVO) {
+
+        List<Object> modifyStatus = new ArrayList<>();
+        // 验证旧密码
+        String oldPassword = updUserInfoVO.getOldPassword();
+        String decryptPwd = AesUtil.decrypt(oldPassword);
+        String oldMd5Pwd = Md5Util.encrypt(decryptPwd);
+
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("username", updUserInfoVO.getUsername())
+                        .and(qw -> {
+                            qw.eq("password", oldMd5Pwd);
+                        });
+        User userInfo = getOne(queryWrapper, false);
+        if (userInfo != null) {
+            // 验证成功，修改旧密码
+            String newPassword = updUserInfoVO.getNewPassword();
+            String newDecryptPwd = AesUtil.decrypt(newPassword);
+            String newMd5Pwd = Md5Util.encrypt(newDecryptPwd);
+            userInfo.setPassword(newMd5Pwd);
+            boolean update = saveOrUpdate(userInfo);
+            if (update) {
+                modifyStatus.add(ResultStatusCode.SUCCESS_MODIFY_PWD.getCode());
+                modifyStatus.add(ResultStatusCode.SUCCESS_MODIFY_PWD.getMsg());
+                return modifyStatus;
+            }
+        }
+        modifyStatus.add(ResultStatusCode.ERROR_USER_003.getCode());
+        modifyStatus.add(ResultStatusCode.ERROR_USER_003.getMsg());
+        return modifyStatus;
     }
 
 //    @Autowired

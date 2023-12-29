@@ -43,9 +43,10 @@ public enum ResultStatusCode {
     ERROR_IMPORT(5001, "数据信息导入失败"),
     ERROR_IMPORT_001(5003, "数据信息导入失败，导入的Excel与数据库表不对应。请重新选择！"),
     ERROR_UPDATE(5002, "新增数据信息失败，工单编号不能为空"),
+    ERROR_UPDATE_INFO(5009, "数据信息更新失败"),
 
     ERROR_ADD_LOGIN_USER(5007, "新增用户失败，请联系管理员"),
-    ERROR_DEL_LOGIN_USER(5007, "删除用户失败，请联系管理员")
+    ERROR_DEL_LOGIN_USER(5008, "删除用户失败，请联系管理员")
     ;
 
 

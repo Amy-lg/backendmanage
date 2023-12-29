@@ -12,7 +12,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.power.common.Result;
 import com.power.common.constant.ResultStatusCode;
-import com.power.controller.logincontroller.VerifyCodeController;
 import com.power.entity.User;
 import com.power.entity.dto.LoginUserDTO;
 import com.power.entity.dto.UserDTO;
@@ -22,6 +21,7 @@ import com.power.service.UserService;
 import com.power.utils.AesUtil;
 import com.power.utils.Md5Util;
 import com.power.utils.ResultUtils;
+import com.power.vo.user.UpdUserInfoVO;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,7 +35,6 @@ import java.net.URLEncoder;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -306,5 +305,21 @@ public class UserController {
         writer.close();
         // 记得关闭输出Servlet流
         outputStream.close();
+    }
+
+
+    /**
+     * 用户第一次登录后修改密码
+     * @param updUserInfoVO
+     * @return
+     */
+    @PostMapping("/modifyPwdFl")
+    public Result modifyPassword(@RequestBody UpdUserInfoVO updUserInfoVO) {
+
+        List<Object> modifyResult = userService.modifyPwdByFirstLogin(updUserInfoVO);
+        if (modifyResult != null) {
+            return ResultUtils.success(modifyResult);
+        }
+        return null;
     }
 }
