@@ -24,10 +24,6 @@ public class TOrderEntity implements Serializable {
      */
     private String orderTheme;
     /**
-     * 项目编号
-     */
-//    private String projectNum;
-    /**
      * 派发时间
      */
     private String dispatchOrderTime;

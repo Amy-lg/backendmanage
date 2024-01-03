@@ -9,15 +9,19 @@ import com.power.common.constant.ResultStatusCode;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.mapper.filemapper.BusinessOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
+import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 @Service
@@ -164,4 +168,118 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
         businessAverageDurationList.add(String.valueOf(count));
         return businessAverageDurationList;
     }
+
+
+    /**
+     * 业务工单数据导入
+     * @param file
+     * @return
+     */
+    public String importBusinessOrderExcel(MultipartFile file) {
+
+        List<BusinessOrderEntity> bOrderEntityList = importProjectInfoData(file);
+        if (bOrderEntityList != null) {
+            boolean saveBatch = this.saveBatch(bOrderEntityList, 200);
+            if (saveBatch) {
+                return ResultStatusCode.SUCCESS_UPLOAD.toString();
+            }
+        }
+        return ResultStatusCode.FILE_TYPE_ERROR.toString();
+    }
+
+
+    /**
+     * 数据解析
+     * @param file
+     * @return
+     */
+    private List<BusinessOrderEntity> importProjectInfoData(MultipartFile file) {
+
+        Workbook workbook = AnalysisExcelUtils.isExcelFile(file);
+        List<BusinessOrderEntity> bOrderEntityList = new ArrayList<>();
+        BusinessOrderEntity businessOrder = null;
+
+        if (workbook != null) {
+            int sheets = workbook.getNumberOfSheets();
+            try {
+                // 通过反射获取私有属性名称
+                Class<?> clazz = Class.forName("com.power.entity.fileentity.BusinessOrderEntity");
+                for (int i = 0; i < sheets; i++) {
+                    Sheet sheet = workbook.getSheetAt(i);
+                    if (sheet != null) {
+                        // 数据标题
+//                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
+                        // 数据总行数
+                        int lastRowNum = sheet.getLastRowNum();
+                        for (int j = 1; j <= lastRowNum; j++) {
+                            // 通过构造方法实例化对象
+                            businessOrder = (BusinessOrderEntity) clazz.getDeclaredConstructor().newInstance();
+                            // 获取所有私有属性
+                            Field[] bOrderFields = clazz.getDeclaredFields();
+                            // 获取各个行实例
+                            Row contentRow = sheet.getRow(j);
+                            String cellValue = null;
+                            Iterator<Cell> cellIterator = contentRow.cellIterator();
+                            while (cellIterator.hasNext()) {
+                                Cell cell = cellIterator.next();
+                                CellType cellType = cell.getCellType();
+                                // 利用列索引循环属性赋值（从第3个属性开始）
+                                int columnIndex = cell.getColumnIndex() + 2;
+                                switch (cellType) {
+                                    case STRING:
+                                        cellValue = cell.getStringCellValue();
+                                        bOrderFields[columnIndex].setAccessible(true);
+                                        bOrderFields[columnIndex].set(businessOrder, cellValue);
+                                        break;
+                                    case NUMERIC:
+                                        cellValue = String.valueOf(cell.getNumericCellValue());
+                                        bOrderFields[columnIndex].setAccessible(true);
+                                        bOrderFields[columnIndex].set(businessOrder, cellValue);
+                                        break;
+                                    case BOOLEAN:
+                                        bOrderFields[columnIndex].setAccessible(true);
+                                        cellValue = String.valueOf(cell.getBooleanCellValue());
+                                        break;
+                                    case FORMULA:
+                                        // 创建公式解析器
+                                        FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+                                        // 解析公式
+                                        CellValue evaluate = formulaEvaluator.evaluate(cell);
+                                        double value = evaluate.getNumberValue();
+                                        bOrderFields[columnIndex].setAccessible(true);
+                                        bOrderFields[columnIndex].set(businessOrder, value);
+                                        break;
+                                    case BLANK:
+                                        bOrderFields[columnIndex].setAccessible(true);
+                                        cellValue = "";
+                                        break;
+                                    case ERROR:
+//                                        byte errorCellValue = cell.getErrorCellValue();
+                                        bOrderFields[columnIndex].setAccessible(true);
+                                        bOrderFields[columnIndex].set(businessOrder, false);
+                                        break;
+                                    default:
+                                        cellValue = null;
+                                        break;
+                                }
+                            }
+                            bOrderEntityList.add(businessOrder);
+                        }
+                    }
+                    continue;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return bOrderEntityList;
+        }
+        return null;
+    }
+
+
 }
