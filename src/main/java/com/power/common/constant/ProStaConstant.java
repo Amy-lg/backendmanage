@@ -53,6 +53,9 @@ public class ProStaConstant {
     // 基本信息表
     public static final String IS_YES = "是";
     public static final String IS_NO = "否";
+    public static final String DIAL_STATUS = "拨测状态";
+    public static final String DIAL_RESULT = "最新拨测结果";
+    public static final String TASK_STATUS = "任务状态";
 
     public static final String[] counties = {ProStaConstant.CUSTOMER,ProStaConstant.JIA_HE,ProStaConstant.PING_HU,
             ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,

@@ -36,7 +36,25 @@ public class FaultTrackingService extends ServiceImpl<FaultTrackingMapper, Fault
             List<FaultTrackingEntity> faultTrackingList = this.importData(file);
             if (faultTrackingList != null && faultTrackingList.size() != 0) {
                 for (FaultTrackingEntity fault : faultTrackingList) {
-                    this.saveOrUpdate(fault);
+                    // 导入前需要判断项目状态(已修复，继续导入；修复中，不导入)
+                    QueryWrapper<FaultTrackingEntity> queryWrapper = new QueryWrapper<>();
+                    String targetIp = fault.getTargetIp();
+                    queryWrapper.eq("target_ip", targetIp);
+                    queryWrapper.orderByDesc("update_time");
+                    List<FaultTrackingEntity> existFaultInfoList = list(queryWrapper);
+                    if (existFaultInfoList != null && existFaultInfoList.size() > 0) {
+                        // 获取最新导入数据内容
+                        FaultTrackingEntity faultTracking = existFaultInfoList.get(0);
+                        String progressStatus = faultTracking.getProgressStatus();
+                        if (progressStatus != null && "已修复".equals(progressStatus)) {
+                            // 已修复，又出现问题；那么导入这条数据，之前已修复的数据保留
+                            saveOrUpdate(faultTracking);
+                        } else if (progressStatus == null || "".equals(progressStatus)){
+                            break;
+                        }
+                    } else {
+                        this.saveOrUpdate(fault);
+                    }
                 }
                 return ResultStatusCode.SUCCESS_UPLOAD.toString();
             }
@@ -93,6 +111,16 @@ public class FaultTrackingService extends ServiceImpl<FaultTrackingMapper, Fault
                                     case BLANK:
                                         privateFields[columnIndex].setAccessible(true);
                                         cellValue = "";
+                                        privateFields[columnIndex].set(faultTracking, cellValue);
+                                        break;
+                                    case FORMULA:
+                                        // 创建公式解析器
+                                        FormulaEvaluator formulaEvaluator = workbook.getCreationHelper()
+                                                .createFormulaEvaluator();
+                                        // 解析公式
+                                        CellValue evaluate = formulaEvaluator.evaluate(cell);
+                                        cellValue = evaluate.getStringValue();
+                                        privateFields[columnIndex].setAccessible(true);
                                         privateFields[columnIndex].set(faultTracking, cellValue);
                                         break;
                                     default:
@@ -221,9 +249,10 @@ public class FaultTrackingService extends ServiceImpl<FaultTrackingMapper, Fault
                         basicProjectName.equals(faultProjectName)) {
                     QueryWrapper<FaultTrackingEntity> queryWrapper = new QueryWrapper<>();
                     queryWrapper.eq("project_name", faultProjectName);
+                    queryWrapper.eq("target_ip", fault.getTargetIp());
                     String basicInfoCounty = basicInfo.getCounty();
                     fault.setProjectCounty(basicInfoCounty);
-                    saveOrUpdate(fault, queryWrapper);
+                    update(fault, queryWrapper);
                 }
             }
         }

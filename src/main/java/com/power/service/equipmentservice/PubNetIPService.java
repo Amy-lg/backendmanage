@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.common.util.CommonUtil;
 import com.power.entity.equipment.PubNetIPEntity;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.PubNetIPMapper;
@@ -15,11 +16,10 @@ import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity> {
@@ -34,7 +34,7 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
         // 先判断上传的文件是否对应数据库信息
         String originalFilename = file.getOriginalFilename();
         if (originalFilename.contains("公网ip拨测数据")) {
-            List<PubNetIPEntity> pubNetIPEntityList = this.importData(file);
+            List<PubNetIPEntity> pubNetIPEntityList = this.importDataByIterator(file);
             if (pubNetIPEntityList != null) {
                 for (PubNetIPEntity pubNetIp : pubNetIPEntityList) {
                     QueryWrapper<PubNetIPEntity> queryWrapper = new QueryWrapper<>();
@@ -141,12 +141,12 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
                                 case 10:
                                     pubNetIP.setLossRate(cellValue);
                                     break;
-                                case 11:
-                                    pubNetIP.setLoadingDelay(cellNumValue);
-                                    break;
-                                default:
-                                    pubNetIP.setShake(cellNumValue.intValue());
-                                    break;
+//                                case 11:
+//                                    pubNetIP.setLoadingDelay(cellNumValue);
+//                                    break;
+//                                default:
+//                                    pubNetIP.setShake(cellNumValue.intValue());
+//                                    break;
                             }
                         }
                         pubNetIP.setProjectStatus(true);
@@ -159,6 +159,119 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
         }
         return null;
     }
+
+
+    /**
+     * 使用迭代器进行数据导入
+     * @param excelFile
+     * @return
+     */
+    private List<PubNetIPEntity> importDataByIterator(MultipartFile excelFile) {
+        Workbook workbook = AnalysisExcelUtils.isExcelFile(excelFile);
+        PubNetIPEntity pubNetIP = null;
+        List<PubNetIPEntity> pubNetIPList = new ArrayList<>();
+        if (workbook != null) {
+            int sheets = workbook.getNumberOfSheets();
+            try {
+                // 通过反射获取私有属性名称
+                Class<?> clazz = Class.forName("com.power.entity.equipment.PubNetIPEntity");
+                for (int i = 0; i < sheets; i++) {
+                    Sheet sheet = workbook.getSheetAt(i);
+                    if (sheet != null) {
+                        // 数据标题
+                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
+                        // 数据总行数
+                        int lastRowNum = sheet.getLastRowNum();
+                        for (int j = 1; j <= lastRowNum; j++) {
+                            // 通过构造方法实例化对象
+                            pubNetIP = (PubNetIPEntity) clazz.getDeclaredConstructor().newInstance();
+                            // 获取所有私有属性
+                            Field[] pubNetIPFields = clazz.getDeclaredFields();
+                            // 获取属性上的注释信息
+                            List<String> fieldAnnotationList = CommonUtil.getFieldAnnotation(pubNetIPFields);
+                            // 获取各个行实例
+                            Row contentRow = sheet.getRow(j);
+                            String cellValue = null;
+                            Iterator<Cell> cellIterator = contentRow.cellIterator();
+                            while (cellIterator.hasNext()) {
+                                Cell cell = cellIterator.next();
+                                CellType cellType = cell.getCellType();
+                                // 利用列索引循环属性赋值（从第3个属性开始）
+                                int columnIndex = cell.getColumnIndex() + 2;
+                                switch (cellType) {
+                                    case STRING:
+                                        String title = excelTitle.get(cell.getColumnIndex());
+                                        for (int k = 0; k < fieldAnnotationList.size(); k++) {
+                                            String fieldAnnotation = fieldAnnotationList.get(k);
+                                            if (!"".equals(fieldAnnotation) && fieldAnnotation != null
+                                                    && title != null && title.equals(fieldAnnotation)) {
+                                                cellValue = cell.getStringCellValue();
+                                                pubNetIPFields[k + 2].setAccessible(true);
+                                                // 拨测状态、任务状态
+                                                if (ProStaConstant.NORMAL.equals(cellValue)
+                                                        && ProStaConstant.TASK_STATUS.equals(fieldAnnotation)) {
+                                                    pubNetIPFields[k + 2].set(pubNetIP, true);
+                                                } else if (ProStaConstant.OPEN.equals(cellValue)
+                                                        && ProStaConstant.DIAL_RESULT.equals(fieldAnnotation)) {
+                                                    pubNetIPFields[k + 2].set(pubNetIP, true);
+                                                } else {
+                                                    pubNetIPFields[k + 2].set(pubNetIP, cellValue);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case NUMERIC:
+                                        cellValue = String.valueOf(cell.getNumericCellValue());
+                                        pubNetIPFields[cell.getColumnIndex() - 2].setAccessible(true);
+                                        pubNetIPFields[cell.getColumnIndex() - 2].set(pubNetIP, cellValue);
+                                        break;
+                                    case BOOLEAN:
+                                        pubNetIPFields[columnIndex].setAccessible(true);
+                                        cellValue = String.valueOf(cell.getBooleanCellValue());
+                                        break;
+                                    case FORMULA:
+                                        // 创建公式解析器
+                                        FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+                                        // 解析公式
+                                        CellValue evaluate = formulaEvaluator.evaluate(cell);
+                                        double value = evaluate.getNumberValue();
+                                        pubNetIPFields[columnIndex].setAccessible(true);
+                                        pubNetIPFields[columnIndex].set(pubNetIP, value);
+                                        break;
+                                    case BLANK:
+                                        pubNetIPFields[columnIndex].setAccessible(true);
+                                        cellValue = "";
+                                        break;
+                                    case ERROR:
+//                                        byte errorCellValue = cell.getErrorCellValue();
+                                        pubNetIPFields[columnIndex].setAccessible(true);
+                                        pubNetIPFields[columnIndex].set(pubNetIP, false);
+                                        break;
+                                    default:
+                                        cellValue = null;
+                                        break;
+                                }
+                            }
+                            pubNetIP.setProjectStatus(true);
+                            pubNetIPList.add(pubNetIP);
+                        }
+                    }
+                    continue;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return pubNetIPList;
+        }
+        return null;
+    }
+
 
     /**
      * 分页查询

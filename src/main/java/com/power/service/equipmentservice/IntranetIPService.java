@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.common.util.CommonUtil;
 import com.power.entity.equipment.IntranetIPEntity;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.IntranetIPMapper;
@@ -15,10 +16,9 @@ import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.*;
 
 @Service
 public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPEntity> {
@@ -30,20 +30,21 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
      */
     public String importIntranetIPExcel(MultipartFile file) {
 
-        String originalFilename = file.getOriginalFilename();
-        if (originalFilename.contains("拨测任务")) {
-            List<IntranetIPEntity> intranetIPEntityList = this.importData(file);
-            if (intranetIPEntityList != null) {
-                // 每次导入时需排除重复数据或已导入的数据
-                for (IntranetIPEntity intranetIp : intranetIPEntityList) {
-                    QueryWrapper<IntranetIPEntity> queryWrapper = new QueryWrapper<>();
-                    queryWrapper.eq("target_ip", intranetIp.getTargetIp());
-                    this.saveOrUpdate(intranetIp, queryWrapper);
-                }
-                return ResultStatusCode.SUCCESS_UPLOAD.toString();
+//        String originalFilename = file.getOriginalFilename();
+//        if (originalFilename.contains("拨测任务")) {
+//            List<IntranetIPEntity> intranetIPEntityList = this.importData(file);
+        List<IntranetIPEntity> intranetIPEntityList = this.importDataByIterator(file);
+        if (intranetIPEntityList != null) {
+            // 每次导入时需排除重复数据或已导入的数据
+            for (IntranetIPEntity intranetIp : intranetIPEntityList) {
+                QueryWrapper<IntranetIPEntity> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("target_ip", intranetIp.getTargetIp());
+                this.saveOrUpdate(intranetIp, queryWrapper);
             }
-//      this.saveBatch(intranetIPEntityList, 100);
+            return ResultStatusCode.SUCCESS_UPLOAD.toString();
         }
+//      this.saveBatch(intranetIPEntityList, 100);
+//        }
         return ResultStatusCode.ERROR_IMPORT.getMsg();
     }
 
@@ -308,6 +309,118 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
                     }
                 }
                 continue;
+            }
+            return intranetIPList;
+        }
+        return null;
+    }
+
+
+    /**
+     * 使用迭代器进行数据导入
+     * @param excelFile
+     * @return
+     */
+    private List<IntranetIPEntity> importDataByIterator(MultipartFile excelFile) {
+        Workbook workbook = AnalysisExcelUtils.isExcelFile(excelFile);
+        IntranetIPEntity intranetIP = null;
+        List<IntranetIPEntity> intranetIPList = new ArrayList<>();
+        if (workbook != null) {
+            int sheets = workbook.getNumberOfSheets();
+            try {
+                // 通过反射获取私有属性名称
+                Class<?> clazz = Class.forName("com.power.entity.equipment.IntranetIPEntity");
+                for (int i = 0; i < sheets; i++) {
+                    Sheet sheet = workbook.getSheetAt(i);
+                    if (sheet != null) {
+                        // 数据标题
+                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
+                        // 数据总行数
+                        int lastRowNum = sheet.getLastRowNum();
+                        for (int j = 1; j <= lastRowNum; j++) {
+                            // 通过构造方法实例化对象
+                            intranetIP = (IntranetIPEntity) clazz.getDeclaredConstructor().newInstance();
+                            // 获取所有私有属性
+                            Field[] intranetIpFields = clazz.getDeclaredFields();
+                            // 获取属性上的注释信息
+                            List<String> fieldAnnotationList = CommonUtil.getFieldAnnotation(intranetIpFields);
+                            // 获取各个行实例
+                            Row contentRow = sheet.getRow(j);
+                            String cellValue = null;
+                            Iterator<Cell> cellIterator = contentRow.cellIterator();
+                            while (cellIterator.hasNext()) {
+                                Cell cell = cellIterator.next();
+                                CellType cellType = cell.getCellType();
+                                // 利用列索引循环属性赋值（从第3个属性开始）
+                                int columnIndex = cell.getColumnIndex() + 2;
+                                switch (cellType) {
+                                    case STRING:
+                                        String title = excelTitle.get(cell.getColumnIndex());
+                                        for (int k = 0; k < fieldAnnotationList.size(); k++) {
+                                            String fieldAnnotation = fieldAnnotationList.get(k);
+                                            if (!"".equals(fieldAnnotation) && fieldAnnotation != null
+                                                    && title != null && title.equals(fieldAnnotation)) {
+                                                cellValue = cell.getStringCellValue();
+                                                intranetIpFields[k + 2].setAccessible(true);
+                                                // 拨测状态、任务状态
+                                                if (ProStaConstant.NORMAL.equals(cellValue)
+                                                        && ProStaConstant.DIAL_STATUS.equals(fieldAnnotation)) {
+                                                    intranetIpFields[k + 2].set(intranetIP, true);
+                                                } else if (ProStaConstant.NORMAL.equals(cellValue)
+                                                        && ProStaConstant.TASK_STATUS.equals(fieldAnnotation)) {
+                                                    intranetIpFields[k + 2].set(intranetIP, true);
+                                                } else {
+                                                    intranetIpFields[k + 2].set(intranetIP, cellValue);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case NUMERIC:
+                                        cellValue = String.valueOf(cell.getNumericCellValue());
+                                        intranetIpFields[columnIndex].setAccessible(true);
+                                        intranetIpFields[columnIndex].set(intranetIP, cellValue);
+                                        break;
+                                    case BOOLEAN:
+                                        intranetIpFields[columnIndex].setAccessible(true);
+                                        cellValue = String.valueOf(cell.getBooleanCellValue());
+                                        break;
+                                    case FORMULA:
+                                        // 创建公式解析器
+                                        FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+                                        // 解析公式
+                                        CellValue evaluate = formulaEvaluator.evaluate(cell);
+                                        double value = evaluate.getNumberValue();
+                                        intranetIpFields[columnIndex].setAccessible(true);
+                                        intranetIpFields[columnIndex].set(intranetIP, value);
+                                        break;
+                                    case BLANK:
+                                        intranetIpFields[columnIndex].setAccessible(true);
+                                        cellValue = "";
+                                        break;
+                                    case ERROR:
+//                                        byte errorCellValue = cell.getErrorCellValue();
+                                        intranetIpFields[columnIndex].setAccessible(true);
+                                        intranetIpFields[columnIndex].set(intranetIP, false);
+                                        break;
+                                    default:
+                                        cellValue = null;
+                                        break;
+                                }
+                            }
+                            intranetIP.setProjectStatus(true);
+                            intranetIPList.add(intranetIP);
+                        }
+                    }
+                    continue;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
             return intranetIPList;
         }
