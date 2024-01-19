@@ -57,6 +57,10 @@ public class ProStaConstant {
     public static final String DIAL_RESULT = "最新拨测结果";
     public static final String TASK_STATUS = "任务状态";
 
+    // 故障跟踪表
+    public static final String EXP_REMINDER_SUB = "故障表未修复数据过期提醒";
+    public static final String FIXED = "已修复";
+
     public static final String[] counties = {ProStaConstant.CUSTOMER,ProStaConstant.JIA_HE,ProStaConstant.PING_HU,
             ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,
             ProStaConstant.HAI_YAN, ProStaConstant.XIU_ZHOU, ProStaConstant.NAN_HU};
