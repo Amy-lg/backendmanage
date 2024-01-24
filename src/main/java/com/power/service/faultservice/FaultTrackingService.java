@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.basic.BasicInfoEntity;
 import com.power.entity.fault.FaultTrackingEntity;
@@ -46,9 +47,10 @@ public class FaultTrackingService extends ServiceImpl<FaultTrackingMapper, Fault
                         // 获取最新导入数据内容
                         FaultTrackingEntity faultTracking = existFaultInfoList.get(0);
                         String progressStatus = faultTracking.getProgressStatus();
-                        if (progressStatus != null && "已修复".equals(progressStatus)) {
+                        if (progressStatus != null && ProStaConstant.FIXED.equals(progressStatus)) {
                             // 已修复，又出现问题；那么导入这条数据，之前已修复的数据保留
-                            saveOrUpdate(faultTracking);
+                            fault.setId((int) Math.random());
+                            saveOrUpdate(fault);
                         } else if (progressStatus == null || "".equals(progressStatus)){
                             break;
                         }
@@ -250,9 +252,18 @@ public class FaultTrackingService extends ServiceImpl<FaultTrackingMapper, Fault
                     QueryWrapper<FaultTrackingEntity> queryWrapper = new QueryWrapper<>();
                     queryWrapper.eq("project_name", faultProjectName);
                     queryWrapper.eq("target_ip", fault.getTargetIp());
+                    queryWrapper.and(qw -> {
+                        qw.eq("progress_status", null)
+                                .or()
+                                .eq("progress_status", "");
+                    });
                     String basicInfoCounty = basicInfo.getCounty();
-                    fault.setProjectCounty(basicInfoCounty);
-                    update(fault, queryWrapper);
+                    String progressStatus = fault.getProgressStatus();
+                    // 处理最新插入的数据，防止之前记录被修改
+                    if (progressStatus == null || "".equals(progressStatus)) {
+                        fault.setProjectCounty(basicInfoCounty);
+                        saveOrUpdate(fault, queryWrapper);
+                    }
                 }
             }
         }

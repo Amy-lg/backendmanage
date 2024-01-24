@@ -43,4 +43,12 @@ public class User {
      * 状态
      */
     private String loginStatus;
+    /**
+     * 用户邮箱
+     */
+    private String email;
+    /**
+     * 县分
+     */
+    private String projectCounty;
 }

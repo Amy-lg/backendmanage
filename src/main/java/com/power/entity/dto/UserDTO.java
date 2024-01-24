@@ -17,6 +17,8 @@ public class UserDTO implements Serializable {
     private String post;
     private String role;
     private String loginStatus;
+    private String email;
+    private String projectCounty;
 
     private String token;
 }
