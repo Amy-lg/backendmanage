@@ -35,11 +35,10 @@ public class EmailController {
 
     /**
      * 邮件消息推送
-     * 0 0 8 * * ?  : 每天早晨8点执行
-     * 0 0/5 * * * ?  : 每5分钟执行一次
-     * @return
+     * 0 0 8 * * ?  : 每天早晨8点执行;
+     * 0 0/5 * * * ?  : 每5分钟执行一次;
      */
-    @Scheduled(cron = "30 * * * * ? ")
+    @Scheduled(cron = "0 0 8 * * ? ")
     public void sendMsgByEmail() {
         // 获取故障数据信息集合
         List<FaultTrackingEntity> faultDataList = faultTrackingService.list();

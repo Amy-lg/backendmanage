@@ -181,6 +181,13 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
                                     k += 1;
                                     break;
                                 case 35:
+                                    if (cellValue != null && !(cellValue.contains("-"))) {
+                                        double date = Double.parseDouble(cellValue);
+                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                                        Date convertDate = DateUtil.getJavaDate(date);
+                                        String formatDate = sdf.format(convertDate);
+                                        evaluation.setRevisitingTime(formatDate);
+                                    }
                                     evaluation.setRevisitingTime(cellValue);
                                     break;
                                 default:

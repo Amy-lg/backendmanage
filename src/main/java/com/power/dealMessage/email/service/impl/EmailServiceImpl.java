@@ -47,7 +47,7 @@ public class EmailServiceImpl implements EmailService {
                 // 设置发送人
                 message.setFrom(from);
                 // 设置接收人（接收人的获取需要从故障表字段信息中获取）
-                message.setTo("18867119065@139.com");
+                message.setTo(ProStaConstant.TO_EMAIL);
                 // 设置邮件发送日期
                 message.setSentDate(new Date());
                 for (FaultTrackingEntity fault : faultDataList) {
@@ -61,9 +61,10 @@ public class EmailServiceImpl implements EmailService {
                         // 预计修复日期<=当前日期，需要推送邮件提示
                         if (compare == -1 || compare == 0) {
                             // 设置邮件内容
-                            message.setText("项目:" + fault.getProjectName()+"。即将过期或已超出预计修复日期，请尽快修复！\n"+
-                                    "项目处理状态:" + fault.getDialStatus() + "\n" +
-                                    "备注：" + fault.getNotes());
+                            message.setText("【DICT售后服务智能中枢-故障跟踪】\n" +
+                                    "项目名称:" + fault.getProjectName() + "\n" +
+                                    "故障点信息:" +fault.getTargetIp() + "\n" +
+                                    "目前已到预计修复时间，请及时更新故障信息。");
                             javaMailSender.send(message);
                         }
                     }
