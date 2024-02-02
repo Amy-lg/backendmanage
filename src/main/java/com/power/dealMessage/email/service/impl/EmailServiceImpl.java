@@ -1,7 +1,9 @@
 package com.power.dealMessage.email.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.power.common.constant.ProStaConstant;
 import com.power.dealMessage.email.service.EmailService;
+import com.power.entity.User;
 import com.power.entity.fault.FaultTrackingEntity;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -30,7 +32,8 @@ public class EmailServiceImpl implements EmailService {
      */
     @Override
     public void sendMsgByEmail(JavaMailSenderImpl javaMailSender, String from,
-                                 List<FaultTrackingEntity> faultDataList) {
+                               List<FaultTrackingEntity> faultDataList,
+                               List<User> userList) {
 
         try {
             int compare = 0;
@@ -51,6 +54,18 @@ public class EmailServiceImpl implements EmailService {
                 // 设置邮件发送日期
                 message.setSentDate(new Date());
                 for (FaultTrackingEntity fault : faultDataList) {
+                    // 获取区县，用于推送邮件信息
+                    String projectCounty = fault.getProjectCounty();
+                    if (!StrUtil.isEmpty(projectCounty)) {
+                        for (User user : userList) {
+                            String userProjectCounty = user.getProjectCounty();
+                            if (null != userProjectCounty && !"".equals(userProjectCounty)
+                                    && projectCounty.equals(userProjectCounty)) {
+                                String userEmail = user.getEmail();
+                                message.setTo(userEmail);
+                            }
+                        }
+                    }
                     String progressStatus = fault.getProgressStatus();
                     if (progressStatus != null && !"".equals(progressStatus) &&
                             !ProStaConstant.FIXED.equals(progressStatus)) {

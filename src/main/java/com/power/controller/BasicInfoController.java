@@ -30,7 +30,7 @@ public class BasicInfoController {
     public Result getMaintenanceNum() {
         Map<String, Object> maintenanceNumMap = basicInfoService.getMaintenanceNum();
         if (maintenanceNumMap != null) {
-            return ResultUtils.success(basicInfoService.getMaintenanceNum());
+            return ResultUtils.success(maintenanceNumMap);
         }else {
             // 返回空
             return ResultUtils.success();

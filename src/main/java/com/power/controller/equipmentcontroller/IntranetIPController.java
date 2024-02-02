@@ -44,11 +44,13 @@ public class IntranetIPController {
     /**
      * 数据导入
      * @param file 内网ip拨测excel文件
+     * @param countyFile 区县匹配参数
      * @return
      */
     @PostMapping("/import")
-    public Result importIntranetIpFile(@RequestParam MultipartFile file) {
-        String importResult = intranetIPService.importIntranetIPExcel(file);
+    public Result importIntranetIpFile(@RequestParam MultipartFile file,
+                                       @RequestParam MultipartFile countyFile) {
+        String importResult = intranetIPService.importIntranetIPExcel(file, countyFile);
         if (importResult != null && !importResult.equals(ResultStatusCode.ERROR_IMPORT.getMsg())) {
             return ResultUtils.success(importResult);
         }

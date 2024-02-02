@@ -97,14 +97,14 @@ public class InspectionService extends ServiceImpl<InspectionMapper, InspectionO
         int[] monthCount = new int[12];
         List<InspectionOrderEntity> inspectionOrderList = this.list();
         if (!inspectionOrderList.isEmpty() && inspectionOrderList.size() != 0) {
-            int oldYear = 0;
+            int oldYear = 123; // 先显示2023年数据
             for (InspectionOrderEntity inspectOrder : inspectionOrderList) {
                 String dealTime = inspectOrder.getDealTime();
                 if (!StrUtil.isBlank(dealTime)) {
                     try {
                         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                         Date parseTime = sdf.parse(dealTime);
-                        if (oldYear == 0 || oldYear == parseTime.getYear()) {
+                        if (oldYear == parseTime.getYear()) {
                             oldYear = parseTime.getYear();
                             int month = parseTime.getMonth() + 1;
                             switch (month) {
@@ -249,12 +249,12 @@ public class InspectionService extends ServiceImpl<InspectionMapper, InspectionO
                                     break;
                                 case 6:
                                     inspectionOrder.setInspectionProject(cellValue);
-                                    k += 4;
+                                    k += 3;
                                     break;
-                                case 11:
+                                case 10:
                                     inspectionOrder.setCreateDate(cellValue);
                                     break;
-                                case 12:
+                                case 11:
                                     inspectionOrder.setEndDate(cellValue);
                                     k += 1;
                                     break;

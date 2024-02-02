@@ -25,6 +25,7 @@ public class ProStaConstant {
     public static final String HAI_YAN = "海盐";
     public static final String XIU_ZHOU = "秀洲";
     public static final String NAN_HU = "南湖";
+    public static final String JIA_XING = "嘉兴";
 
     // 月份常量
     public static final int JANUARY = 1;
@@ -60,11 +61,15 @@ public class ProStaConstant {
     // 故障跟踪表
     public static final String EXP_REMINDER_SUB = "DICT售后服务智能中枢故障提醒";
     public static final String FIXED = "已修复";
+    // 推送邮件接收人常量设置
     public static final String TO_EMAIL = "18867119065@139.com";
 
-    public static final String[] counties = {ProStaConstant.CUSTOMER,ProStaConstant.JIA_HE,ProStaConstant.PING_HU,
-            ProStaConstant.JIA_SHAN, ProStaConstant.TONG_XIANG, ProStaConstant.HAI_NING,
-            ProStaConstant.HAI_YAN, ProStaConstant.XIU_ZHOU, ProStaConstant.NAN_HU};
+    public static final String[] counties = {CUSTOMER, JIA_HE, PING_HU, JIA_SHAN, TONG_XIANG, HAI_NING,
+            HAI_YAN, XIU_ZHOU, NAN_HU};
+
+    // 主页面项目在维嘉兴数据转给要客 常量数组
+    public static final String[] counties_jx = {CUSTOMER, JIA_HE, PING_HU, JIA_SHAN, TONG_XIANG, HAI_NING,
+            HAI_YAN, XIU_ZHOU, NAN_HU, JIA_XING};
 
     // 计算纳管率
     public static final String[] counties_rate = {ProStaConstant.CUSTOMER,ProStaConstant.PING_HU,

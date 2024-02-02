@@ -1,7 +1,9 @@
 package com.power.dealMessage.email.controller;
 
 import com.power.dealMessage.email.service.EmailService;
+import com.power.entity.User;
 import com.power.entity.fault.FaultTrackingEntity;
+import com.power.service.UserService;
 import com.power.service.faultservice.FaultTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +32,10 @@ public class EmailController {
     @Autowired
     private FaultTrackingService faultTrackingService;
 
+    // 获取用户
+    @Autowired
+    private UserService userService;
+
     @Value("${spring.mail.username}")
     private String from;
 
@@ -40,9 +46,10 @@ public class EmailController {
      */
     @Scheduled(cron = "0 0 8 * * ? ")
     public void sendMsgByEmail() {
+        List<User> userList = userService.list();
         // 获取故障数据信息集合
         List<FaultTrackingEntity> faultDataList = faultTrackingService.list();
-        emailService.sendMsgByEmail(javaMailSender,from,faultDataList);
+        emailService.sendMsgByEmail(javaMailSender,from,faultDataList,userList);
     }
 
 }

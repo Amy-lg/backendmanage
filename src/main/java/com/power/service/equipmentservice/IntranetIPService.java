@@ -9,6 +9,7 @@ import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.common.util.CommonUtil;
 import com.power.entity.equipment.IntranetIPEntity;
+import com.power.entity.equipment.pojo.MatchCountyPojo;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.IntranetIPMapper;
 import com.power.utils.AnalysisExcelUtils;
@@ -26,19 +27,22 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
     /**
      * 数据导入
      * @param file 内网ip拨测excel文件
+     * @param countyFile 区县匹配参数
      * @return
      */
-    public String importIntranetIPExcel(MultipartFile file) {
+    public String importIntranetIPExcel(MultipartFile file, MultipartFile countyFile) {
 
 //        String originalFilename = file.getOriginalFilename();
 //        if (originalFilename.contains("拨测任务")) {
 //            List<IntranetIPEntity> intranetIPEntityList = this.importData(file);
-        List<IntranetIPEntity> intranetIPEntityList = this.importDataByIterator(file);
+        List<IntranetIPEntity> intranetIPEntityList = this.importDataByIterator(file, countyFile);
         if (intranetIPEntityList != null) {
             // 每次导入时需排除重复数据或已导入的数据
             for (IntranetIPEntity intranetIp : intranetIPEntityList) {
                 QueryWrapper<IntranetIPEntity> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("project_name", intranetIp.getProjectName());
                 queryWrapper.eq("target_ip", intranetIp.getTargetIp());
+                queryWrapper.eq("target_county", intranetIp.getTargetCounty());
                 this.saveOrUpdate(intranetIp, queryWrapper);
             }
             return ResultStatusCode.SUCCESS_UPLOAD.toString();
@@ -319,12 +323,17 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
     /**
      * 使用迭代器进行数据导入
      * @param excelFile
+     * @param countyFile 此表做区县字段值的匹配（通过目标IP）
      * @return
      */
-    private List<IntranetIPEntity> importDataByIterator(MultipartFile excelFile) {
+    private List<IntranetIPEntity> importDataByIterator(MultipartFile excelFile, MultipartFile countyFile) {
         Workbook workbook = AnalysisExcelUtils.isExcelFile(excelFile);
         IntranetIPEntity intranetIP = null;
         List<IntranetIPEntity> intranetIPList = new ArrayList<>();
+
+        // 通过countyFile参数，匹配区县字段值
+        List<MatchCountyPojo> matchCountyList = this.analysisCountyByIP(countyFile);
+
         if (workbook != null) {
             int sheets = workbook.getNumberOfSheets();
             try {
@@ -409,6 +418,19 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
                                 }
                             }
                             intranetIP.setProjectStatus(true);
+                            // 替换目的点地市的值为区县
+                            if (matchCountyList.size() > 0 && matchCountyList != null) {
+                                for (MatchCountyPojo matchCountyPojo : matchCountyList) {
+                                    // 匹配表的项目名、目标IP（通过这两个字段确定一条数据的唯一性）
+                                    String matchCountyPojoProjectName = matchCountyPojo.getProjectName();
+                                    String matchCountyPojoTargetIp = matchCountyPojo.getTargetIp();
+                                    if (matchCountyPojoTargetIp.equals(intranetIP.getTargetIp()) &&
+                                            matchCountyPojoProjectName.equals(intranetIP.getProjectName())) {
+                                        String matchCountyPojoTargetCounty = matchCountyPojo.getTargetCounty();
+                                        intranetIP.setTargetCounty(matchCountyPojoTargetCounty);
+                                    }
+                                }
+                            }
                             intranetIPList.add(intranetIP);
                         }
                     }
@@ -423,6 +445,82 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
                 throw new RuntimeException(e);
             }
             return intranetIPList;
+        }
+        return null;
+    }
+
+
+    /**
+     * 通过IP解析区县的字段值
+     * @param countyFile
+     * @return
+     */
+    private List<MatchCountyPojo> analysisCountyByIP(MultipartFile countyFile) {
+
+        Workbook workbook = AnalysisExcelUtils.isExcelFile(countyFile);
+        MatchCountyPojo matchCountyPojo = null;
+        List<MatchCountyPojo> matchCountyPojoList = new ArrayList<>();
+
+        if (workbook != null) {
+            int sheets = workbook.getNumberOfSheets();
+            try {
+                // 通过反射获取私有属性名称
+                Class<?> clazz = Class.forName("com.power.entity.equipment.pojo.MatchCountyPojo");
+                for (int i = 0; i < sheets; i++) {
+                    Sheet sheet = workbook.getSheetAt(i);
+                    if (sheet != null) {
+                        // 数据标题
+                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
+                        // 数据总行数
+                        int lastRowNum = sheet.getLastRowNum();
+                        for (int j = 1; j <= lastRowNum; j++) {
+                            // 通过构造方法实例化对象
+                            matchCountyPojo = (MatchCountyPojo) clazz.getDeclaredConstructor().newInstance();
+                            // 获取所有私有属性
+                            Field[] matchCountyPojoFields = clazz.getDeclaredFields();
+                            // 获取属性上的注释信息
+                            List<String> fieldAnnotationList = CommonUtil.getFieldAnnotation(matchCountyPojoFields);
+                            // 获取各个行实例
+                            Row contentRow = sheet.getRow(j);
+                            String cellValue = null;
+                            Iterator<Cell> cellIterator = contentRow.cellIterator();
+                            while (cellIterator.hasNext()) {
+                                Cell cell = cellIterator.next();
+                                CellType cellType = cell.getCellType();
+                                // 利用列索引循环属性赋值
+                                int columnIndex = cell.getColumnIndex();
+                                switch (cellType) {
+                                    case STRING:
+                                        String title = excelTitle.get(columnIndex);
+                                        for (int k = 0; k < fieldAnnotationList.size(); k++) {
+                                            String fieldAnnotation = fieldAnnotationList.get(k);
+                                            if (!"".equals(fieldAnnotation) && fieldAnnotation != null
+                                                    && title != null && title.equals(fieldAnnotation)) {
+                                                cellValue = cell.getStringCellValue();
+                                                matchCountyPojoFields[k].setAccessible(true);
+                                                matchCountyPojoFields[k].set(matchCountyPojo, cellValue);
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            matchCountyPojoList.add(matchCountyPojo);
+                        }
+                    }
+                    continue;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return matchCountyPojoList;
         }
         return null;
     }

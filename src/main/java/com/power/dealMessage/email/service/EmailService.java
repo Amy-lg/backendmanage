@@ -1,5 +1,6 @@
 package com.power.dealMessage.email.service;
 
+import com.power.entity.User;
 import com.power.entity.fault.FaultTrackingEntity;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
@@ -16,8 +17,9 @@ public interface EmailService {
      * @return
      */
     void sendMsgByEmail(JavaMailSenderImpl javaMailSender,
-                          String from,
-                          List<FaultTrackingEntity> faultDataList);
+                        String from,
+                        List<FaultTrackingEntity> faultDataList,
+                        List<User> userList);
 
 
 }
