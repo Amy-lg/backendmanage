@@ -22,6 +22,7 @@ public enum ResultStatusCode {
     SUCCESS_ADD_LOGIN_USER(205, "用户信息更新成功"),
     SUCCESS_DELETE_USER(206, "删除用户成功"),
     SUCCESS_MODIFY_PWD(207, "密码修改成功"),
+    SUCCESS_SEARCH(208, "数据查询成功"),
 
     /**
      * 错误
