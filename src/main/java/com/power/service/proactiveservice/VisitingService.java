@@ -104,7 +104,7 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
         int[] monthCount = new int[12];
         List<VisitingOrderEntity> visitingOrderList = this.list();
         if (!visitingOrderList.isEmpty() && visitingOrderList.size() != 0) {
-            int oldYear = 0;
+            int oldYear = 123; // 先显示2023年
             for (VisitingOrderEntity visitingOrder :
                     visitingOrderList) {
                 String dealTime = visitingOrder.getDealTime();
@@ -115,7 +115,7 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
 //                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 //                        dtf.format(dealTime);
 //                        TemporalAccessor parse = dtf.parse(dealTime);
-                        if (oldYear == 0 || oldYear == parseTime.getYear()) {
+                        if (oldYear == parseTime.getYear()) {
                             oldYear = parseTime.getYear();
                             int month = parseTime.getMonth() + 1;
                             switch (month) {

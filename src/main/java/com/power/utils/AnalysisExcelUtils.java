@@ -354,18 +354,21 @@ public class AnalysisExcelUtils {
                                     titleLoop += 1;
                                     break;
                                 case 2:
-                                    String projectNum = nextCell.getStringCellValue();
-//                                    tOrderEntity.setProjectNum(projectNum);
-                                    titleLoop += 1;
-                                    break;
-                                case 3:
                                     String dispatchOrderTime = nextCell.getStringCellValue();
                                     tOrderEntity.setDispatchOrderTime(dispatchOrderTime);
                                     titleLoop += 1;
                                     break;
-                                default:
+                                case 3:
                                     String orderDuration = nextCell.getStringCellValue();
                                     tOrderEntity.setOrderDuration(orderDuration);
+                                    titleLoop += 1;
+                                    break;
+                                case 4:
+                                    String orderStatus = nextCell.getStringCellValue();
+                                    tOrderEntity.setOrderStatus(orderStatus);
+                                    titleLoop += 1;
+                                    break;
+                                default:
                                     break;
                             }
                         }
@@ -464,9 +467,16 @@ public class AnalysisExcelUtils {
                                     businessOrder.setFaultyCauseCategory(faultyCauseCategory);
                                     titleLoop += 1;
                                     break;
-                                default:
+                                case 7:
                                     String faultyTitle = nextCell.getStringCellValue();
                                     businessOrder.setFaultyTitle(faultyTitle);
+                                    titleLoop += 1;
+                                    break;
+                                case 8:
+                                    String orderStatus = nextCell.getStringCellValue();
+                                    businessOrder.setOrderStatus(orderStatus);
+                                    break;
+                                default:
                                     break;
                             }
                         }

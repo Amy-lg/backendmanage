@@ -243,6 +243,7 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
         IPage<TOrderEntity> tOrderPage = new Page<>(pageNum, pageSize);
         QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
         if (StrUtil.isEmpty(orderNum) && (dates == null || dates.size() == 0)) {
+            queryWrapper.orderByDesc("id");
             IPage<TOrderEntity> allPage = this.page(tOrderPage, queryWrapper);
             return allPage;
         } else {

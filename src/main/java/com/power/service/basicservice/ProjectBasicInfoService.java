@@ -224,7 +224,7 @@ public class ProjectBasicInfoService extends ServiceImpl<ProjectBasicInfoMapper,
         queryWrapper.eq("project_status", ProStaConstant.PRO_MAINTENANCE);
         // 查询出
         List<BasicInfoEntity> basicInfoList = this.list(queryWrapper);
-        String[] counties = ProStaConstant.counties;
+        String[] counties = ProStaConstant.counties_jx;
         Map<String, Object> countyNumMap = new HashMap<>();
         if (basicInfoList != null && basicInfoList.size() != 0) {
             // 遍历循环区县，计算数量
@@ -262,6 +262,9 @@ public class ProjectBasicInfoService extends ServiceImpl<ProjectBasicInfoMapper,
                                     countyCount.incrementAndGet();
                                     break;
                                 case ProStaConstant.XIU_ZHOU:
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.JIA_XING:
                                     countyCount.incrementAndGet();
                                     break;
                                 default:
