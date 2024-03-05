@@ -8,7 +8,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-@TableName("sales_Service")
+@TableName("sales_service")
 public class SalesServiceEntity implements Serializable {
     private static final long serialVal = 1L;
 

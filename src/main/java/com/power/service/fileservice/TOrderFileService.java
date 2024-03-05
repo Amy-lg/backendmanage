@@ -349,7 +349,9 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
             List<TOrderEntity> tOrderEntityList = this.list(queryWrapper);
             for (TOrderEntity tOrder : tOrderEntityList) {
                 String faultyDuration = tOrder.getOrderDuration();
-                duration += Float.parseFloat(faultyDuration);
+                if (faultyDuration != null && !faultyDuration.isEmpty()) {
+                    duration += Float.parseFloat(faultyDuration);
+                }
             }
 //            String averageDuration = String.format("%.2f", duration / count);
 //            businessAverageDurationList.add(averageDuration);
