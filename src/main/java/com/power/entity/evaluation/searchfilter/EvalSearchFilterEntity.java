@@ -16,5 +16,7 @@ public class EvalSearchFilterEntity extends BaseQuery implements Serializable {
     // 筛选
     private String county;
     private String serviceSatisfaction;
+    // 抽查预估条件
+    private Boolean isChecked;
 
 }
