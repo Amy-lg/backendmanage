@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.basic.BasicInfoEntity;
 import com.power.entity.fileentity.TOrderEntity;
 import com.power.mapper.filemapper.TOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
@@ -361,6 +362,124 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
         }
         tOrderAverageDurationList.add(String.valueOf(count));
         return tOrderAverageDurationList;
+    }
+
+
+    /**
+     * t工单数量
+     * @return
+     */
+    public int getTOrderOfSum() {
+        // 查询所有t工单数量
+        long count = this.count();
+        return (int) count;
+    }
+
+
+    /**
+     * t未完结工单
+     * @return
+     */
+    public int getTOrderOfUnfinished() {
+
+        QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.ne("order_status", ProStaConstant.PROJECT_FINISHED);
+        long count = this.count(queryWrapper);
+        return (int) count;
+    }
+
+
+    /**
+     * 计算t工单处理平均时长
+     * @return
+     */
+    public float getTOrderOfDuration() {
+
+        // 获取全部数据
+        List<TOrderEntity> tOrderEntityList = this.list();
+        // 遍历取出工单历时
+        if (tOrderEntityList != null && tOrderEntityList.size() >= 1) {
+            float duration = 0f;
+            for (TOrderEntity tOrder : tOrderEntityList) {
+                String orderDuration = tOrder.getOrderDuration();
+                if (orderDuration != null && !orderDuration.isEmpty()) {
+                    duration += Float.parseFloat(orderDuration);
+                }
+            }
+            return duration;
+        }
+        return 0f;
+    }
+
+
+    /**
+     * T工单前6月份工单数量统计
+     * @param basicInfoEntityList
+     * @return
+     */
+    public List<Map<String, Object>> getTOrderOfBefore6Month(List<BasicInfoEntity> basicInfoEntityList) {
+
+        // T工单匹配区县
+        matchingCountyByOrderTheme(basicInfoEntityList);
+
+        List<Map<String, Object>> storeByMonthList = new ArrayList<>();
+        for (String county : ProStaConstant.counties) {
+            Map countyCountMap = new LinkedHashMap<String, Object>();
+            for (int i = -5; i <= 0; i++) {
+                // 获取日历实例
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(new Date());
+                calendar.add(Calendar.MONTH, i);
+                Date beforeMonth = calendar.getTime();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+                String formatBeforeMonth = sdf.format(beforeMonth);
+
+                // 先查询到前6月份的数据信息
+                QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+                // 条件一：6个月之内的
+                queryWrapper.like("dispatch_order_time", formatBeforeMonth);
+                queryWrapper.and(qw -> {
+                    qw.like("county", county);
+                });
+                long count = this.count(queryWrapper);
+                countyCountMap.put(county + ":" + formatBeforeMonth, count);
+            }
+            storeByMonthList.add(countyCountMap);
+        }
+        return storeByMonthList;
+    }
+
+
+    /**
+     * T工单匹配区县
+     * @param basicInfoEntityList 被匹配数据对象
+     * @return 返回带区县的T工单
+     */
+    private void matchingCountyByOrderTheme(List<BasicInfoEntity> basicInfoEntityList) {
+        // 获取全部信息
+        List<TOrderEntity> tOrderEntityList = this.list();
+        // ArrayList<TOrderEntity> storeNewTOrderList = new ArrayList<>();
+        if (tOrderEntityList != null && tOrderEntityList.size() >= 1) {
+            for (TOrderEntity tOrder : tOrderEntityList) {
+                String orderTheme = tOrder.getOrderTheme();
+                // 截取出的项目名称字符串
+                String tProjectName = StrUtil.subBetween(orderTheme, "嘉兴市-", "-IT故障-:");
+                // 遍历循环项目概况数据，与项目名匹配
+                if (basicInfoEntityList != null && basicInfoEntityList.size() > 0) {
+                    for (BasicInfoEntity basicInfo : basicInfoEntityList) {
+                        String basicInfoIctProjectName = basicInfo.getIctProjectName();
+                        if (!StrUtil.isEmpty(tProjectName) && !StrUtil.isBlank(basicInfoIctProjectName)
+                                && tProjectName.equals(basicInfoIctProjectName)) {
+                            // 获取区县名
+                            String basicInfoCounty = basicInfo.getCounty();
+                            tOrder.setCounty(basicInfoCounty);
+                            saveOrUpdate(tOrder);
+                        }
+                    }
+                }
+                // storeNewTOrderList.add(tOrder);
+            }
+        }
     }
 
 

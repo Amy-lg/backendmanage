@@ -35,4 +35,8 @@ public class TOrderEntity implements Serializable {
      * 工单状态
      */
     private String orderStatus;
+    /**
+     * 区县
+     */
+    private String county;
 }

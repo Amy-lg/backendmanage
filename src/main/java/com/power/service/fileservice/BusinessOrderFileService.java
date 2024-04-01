@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.mapper.filemapper.BusinessOrderFileMapper;
@@ -19,10 +20,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMapper, BusinessOrderEntity> {
@@ -279,6 +277,113 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
             return bOrderEntityList;
         }
         return null;
+    }
+
+
+    /**
+     * 业务工单数量
+     * @return
+     */
+    public int getBOrderOfSum() {
+        long count = this.count();
+        return (int) count;
+    }
+
+
+    /**
+     * 未完结业务工单
+     * @return
+     */
+    public int getBOrderOfUnfinished() {
+
+        QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.ne("order_status", ProStaConstant.PROJECT_FINISHED);
+        long count = this.count(queryWrapper);
+        return (int) count;
+    }
+
+
+    /**
+     * 业务工单平均时长计算
+     * @return
+     */
+    public float getBOrderOfDuration() {
+
+        List<BusinessOrderEntity> businessOrderEntityList = this.list();
+        if (businessOrderEntityList != null && businessOrderEntityList.size() >= 1) {
+            float duration = 0f;
+            for (BusinessOrderEntity businessOrder : businessOrderEntityList) {
+                String faultyDuration = businessOrder.getFaultyDuration();
+                if (faultyDuration != null && !faultyDuration.isEmpty()) {
+                    duration += Float.parseFloat(faultyDuration);
+                }
+            }
+            return duration;
+        }
+        return 0f;
+    }
+
+
+    /**
+     * 业务工单前6月份工单数量统计
+     * @return
+     */
+    public List<Object> getBusOrderOfBefore6Month() {
+
+        // 相对于当前日期前六个月的时间
+        List<Object> storeByMonthList = new ArrayList<>();
+        // 条件二：区县划分数量
+        /*for (int i = 0; i < 6; i++) {
+            Map countyCountMap = new HashMap<String, Object>();
+            // 获取日历实例
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new Date());
+            calendar.add(Calendar.MONTH, -i);
+            Date beforeMonth = calendar.getTime();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+            String formatBeforeMonth = sdf.format(beforeMonth);
+            // 遍历区县
+            for (String county : ProStaConstant.counties) {
+                // 先查询到前6月份的数据信息
+                QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
+                // 条件一：6个月之内的
+                queryWrapper.like("faulty_time", formatBeforeMonth);
+                queryWrapper.and(qw -> {
+                    qw.like("county", county);
+                });
+                long count = this.count(queryWrapper);
+                countyCountMap.put(county + ":" + formatBeforeMonth, count);
+            }
+            storeByMonthList.add(i, countyCountMap);
+        }*/
+
+        for (String county : ProStaConstant.counties) {
+            Map countyCountMap = new LinkedHashMap<String, Object>();
+            // List<Long> list = new ArrayList<>();
+            for (int i = -5; i <= 0; i++) {
+                // 获取日历实例
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(new Date());
+                calendar.add(Calendar.MONTH, i);
+                Date beforeMonth = calendar.getTime();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+                String formatBeforeMonth = sdf.format(beforeMonth);
+
+                // 先查询到前6月份的数据信息
+                QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
+                // 条件一：6个月之内的
+                queryWrapper.like("faulty_time", formatBeforeMonth);
+                queryWrapper.and(qw -> {
+                    qw.like("county", county);
+                });
+                long count = this.count(queryWrapper);
+                // list.add(count);
+                countyCountMap.put(county + ":" + formatBeforeMonth, count);
+            }
+            storeByMonthList.add(countyCountMap);
+//            storeByMonthList.add(list);
+        }
+        return storeByMonthList;
     }
 
 

@@ -14,6 +14,7 @@ public class ProStaConstant {
     public static final String PRO_FINAL = "项目结束";
     public static final String PRO_DISCONTINUE = "项目中止";
     public static final String PRE_FINISH = "提前结束";
+    public static final String PROJECT_FINISHED = "正常结束";
 
     // 区县常量
     public static final String CUSTOMER = "要客";
@@ -57,6 +58,12 @@ public class ProStaConstant {
     public static final String DIAL_STATUS = "拨测状态";
     public static final String DIAL_RESULT = "最新拨测结果";
     public static final String TASK_STATUS = "任务状态";
+
+    //
+    public static final String T_ORDER_COUNT = "业务工单总数";
+    public static final String B_ORDER_COUNT = "小T工单总数";
+    public static final String ORDER_COUNT = "工单总数";
+    public static final String UNFINISHED_ORDER = "未完结";
 
     // 故障跟踪表
     public static final String EXP_REMINDER_SUB = "DICT售后服务智能中枢故障提醒";
