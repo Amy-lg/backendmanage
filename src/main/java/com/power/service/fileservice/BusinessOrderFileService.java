@@ -10,6 +10,7 @@ import com.power.common.constant.ResultStatusCode;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.mapper.filemapper.BusinessOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.CalculateUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -362,12 +363,7 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
             // List<Long> list = new ArrayList<>();
             for (int i = -5; i <= 0; i++) {
                 // 获取日历实例
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTime(new Date());
-                calendar.add(Calendar.MONTH, i);
-                Date beforeMonth = calendar.getTime();
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
-                String formatBeforeMonth = sdf.format(beforeMonth);
+                String formatBeforeMonth = CalculateUtils.calcBeforeMonth(i);
 
                 // 先查询到前6月份的数据信息
                 QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
@@ -384,6 +380,94 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
 //            storeByMonthList.add(list);
         }
         return storeByMonthList;
+    }
+
+
+    /**
+     * 业务工单每个区县前6月的平均处理时长
+     * @return list存储
+     */
+    public List<Map<String, Object>> calcBOrderAveDurationByCounty() {
+
+        List<Map<String, Object>> storeCalcDataList = new ArrayList<>();
+        // 存储秀洲南湖
+        Map<String, String> xuiZhouMap = new LinkedHashMap<>();
+        Map<String, String> nanHuMap = new LinkedHashMap<>();
+        // 根据区县存储
+        for (String constantCounty : ProStaConstant.counties) {
+            Map<String, Object> linkedHashMap = new LinkedHashMap<>();
+            for (int i = -5; i <= 0; i++) {
+                String formatBeforeMonth = CalculateUtils.calcBeforeMonth(i);
+                // 先查询到前6月份的数据信息
+                QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
+                queryWrapper.like("faulty_time", formatBeforeMonth);
+                queryWrapper.and(qw -> {
+                    qw.like("county", constantCounty);
+                });
+                List<BusinessOrderEntity> businessOrderList = this.list(queryWrapper);
+                String durOfMonthByCounty = "0.000";
+                if (!businessOrderList.isEmpty()) {
+                    float durationSumByCounty = 0f;
+                    int countOfCounty = businessOrderList.size();
+                    for (BusinessOrderEntity businessOrder : businessOrderList) {
+                        // 每条数据的工单历时
+                        String orderFaultyDuration = businessOrder.getFaultyDuration();
+                        if (!StrUtil.isEmpty(orderFaultyDuration)) {
+                            Float faultyDuration = Float.parseFloat(orderFaultyDuration);
+                            // 常量区县 = 数据中的区县 ==> 计算故障历时总和
+                            durationSumByCounty += faultyDuration;
+                        }
+                    }
+                    // 计算
+                    durOfMonthByCounty = String.format("%.3f", (durationSumByCounty / (float) countOfCounty));
+                }
+                // 存储(南湖+秀洲-->嘉禾)
+                if (constantCounty.equals(ProStaConstant.XIU_ZHOU)) {
+                    xuiZhouMap.put(formatBeforeMonth, durOfMonthByCounty);
+                }
+                if (constantCounty.equals(ProStaConstant.NAN_HU)) {
+                    nanHuMap.put(formatBeforeMonth, durOfMonthByCounty);
+                }
+                linkedHashMap.put(constantCounty + ":" + formatBeforeMonth, durOfMonthByCounty);
+            }
+            // 遍历南湖秀洲集合，将值相加
+            if (!xuiZhouMap.isEmpty() && !nanHuMap.isEmpty()) {
+                for (Map.Entry<String, String> xuiZhouEntry : xuiZhouMap.entrySet()){
+                    String xuiZhouEntryKey = xuiZhouEntry.getKey();
+                    for (Map.Entry<String, String> nanHuEntry : nanHuMap.entrySet()) {
+                        String nanHuEntryKey = nanHuEntry.getKey();
+                        if (xuiZhouEntryKey.equals(nanHuEntryKey)) {
+                            String durOfMonthByNanXui = String.format("%.3f", Float.parseFloat(xuiZhouEntry.getValue()) +
+                                    Float.parseFloat(nanHuEntry.getValue()));
+                            linkedHashMap.put(ProStaConstant.JIA_HE + ":" + nanHuEntryKey, durOfMonthByNanXui);
+                            // 将南湖数据删除
+                            linkedHashMap.remove(ProStaConstant.NAN_HU + ":" + nanHuEntryKey);
+                        }
+                    }
+                }
+            }
+            storeCalcDataList.add(linkedHashMap);
+        }
+        // 返回之前删除第一个嘉禾数据
+        storeCalcDataList.remove(1);
+        return storeCalcDataList;
+    }
+
+
+    /**
+     * 封装计算前6个月份的方法
+     * @param number
+     * @return
+     */
+    private String calculateMonth(int number) {
+        // 获取日历实例
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.MONTH, number);
+        Date beforeMonth = calendar.getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+        String formatBeforeMonth = sdf.format(beforeMonth);
+        return formatBeforeMonth;
     }
 
 
