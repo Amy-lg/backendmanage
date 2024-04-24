@@ -552,6 +552,7 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
         }
         // 返回之前删除第一个嘉禾数据
         storeCalcDataList.remove(1);
+        storeCalcDataList.remove(6);
         return storeCalcDataList;
     }
 

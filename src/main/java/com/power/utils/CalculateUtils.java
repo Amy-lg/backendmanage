@@ -3,10 +3,8 @@ package com.power.utils;
 import com.power.common.constant.ProStaConstant;
 import com.power.entity.dto.ProjectOnlineRateDTO;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * 计算行业视频、内网IP、公网IP、公网web四张表区县在线率
@@ -199,4 +197,45 @@ public class CalculateUtils {
         }
         return convertMap;
     }
+
+
+    /**
+     * 计算前几个月份时间
+     * @param number
+     * @return
+     */
+    public static String calcBeforeMonth(Integer number) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.MONTH, number);
+        Date beforeMonth = calendar.getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+        String formatBeforeMonth = sdf.format(beforeMonth);
+        return formatBeforeMonth;
+    }
+
+
+    // 集合计算公共方法
+    public static Map<String, Object> calcMapByEntryKey(Map<String, String> map1, Map<String, String> map2) {
+
+        Map<String, Object> linkedHashMap = new LinkedHashMap<>();
+        if (!map1.isEmpty() && !map2.isEmpty()) {
+            for (Map.Entry<String, String> xuiZhouEntry : map1.entrySet()){
+                String xuiZhouEntryKey = xuiZhouEntry.getKey();
+                for (Map.Entry<String, String> nanHuEntry : map2.entrySet()) {
+                    String nanHuEntryKey = nanHuEntry.getKey();
+                    if (xuiZhouEntryKey.equals(nanHuEntryKey)) {
+                        String durOfMonthByNanXui = String.format("%.3f", Float.parseFloat(xuiZhouEntry.getValue()) +
+                                Float.parseFloat(nanHuEntry.getValue()));
+                        linkedHashMap.put(ProStaConstant.JIA_HE + ":" + nanHuEntryKey, durOfMonthByNanXui);
+                        // 将南湖数据删除
+                        linkedHashMap.remove(ProStaConstant.NAN_HU + ":" + nanHuEntryKey);
+                    }
+                }
+            }
+        }
+        return linkedHashMap;
+    }
+
+
 }
