@@ -18,6 +18,7 @@ public enum ResultStatusCode {
     SUCCESS_UPDATE(201, "备注信息保存成功"),
     SUCCESS_EMPTY(201, "备注信息内容为空"),
     SUCCESS_INSERT(203, "新增数据信息成功"),
+    SUCCESS_DELETE(209, "删除数据信息成功"),
     SUCCESS_UPDATE_INFO(204, "更新数据信息成功"),
     SUCCESS_ADD_LOGIN_USER(205, "用户信息更新成功"),
     SUCCESS_DELETE_USER(206, "删除用户成功"),
@@ -45,6 +46,7 @@ public enum ResultStatusCode {
     ERROR_IMPORT_001(5003, "数据信息导入失败，导入的Excel与数据库表不对应。请重新选择！"),
     ERROR_UPDATE(5002, "新增数据信息失败，工单编号不能为空"),
     ERROR_UPDATE_INFO(5009, "数据信息更新失败"),
+    ERROR_DELETE(5010, "数据信息删除失败"),
 
     ERROR_ADD_LOGIN_USER(5007, "新增用户失败，请联系管理员"),
     ERROR_DEL_LOGIN_USER(5008, "删除用户失败，请联系管理员")

@@ -489,5 +489,74 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
     }
 
 
+    /**
+     * 检索筛选后导出Excel
+     * @param evalSearchFilter
+     * @return
+     */
+    public List<EvaluationEntity> searchOrFilterByExport(EvalSearchFilterEntity evalSearchFilter) {
+
+        QueryWrapper<EvaluationEntity> queryWrapper = new QueryWrapper<>();
+        String projectNum = evalSearchFilter.getProjectNum();
+        String projectName = evalSearchFilter.getProjectName();
+        // 检索判断
+        if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(projectNum)) {
+            if (!StrUtil.isEmpty(projectName)) {
+                queryWrapper.like("project_name", projectName);
+            }
+            if (!StrUtil.isEmpty(projectNum)) {
+                queryWrapper.like("project_num", projectNum);
+            }
+            List<EvaluationEntity> searchList = this.list(queryWrapper);
+            return searchList;
+        }
+        // 筛选
+        String county = evalSearchFilter.getCounty();
+        String serviceSatisfaction = evalSearchFilter.getServiceSatisfaction();
+        if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(serviceSatisfaction)) {
+            if (!StrUtil.isEmpty(county)) {
+                queryWrapper.like("county", county);
+            }
+            if (!StrUtil.isEmpty(serviceSatisfaction)) {
+                queryWrapper.like("service_satisfaction", serviceSatisfaction);
+            }
+            List<EvaluationEntity> fileterList = this.list(queryWrapper);
+            return fileterList;
+        }
+        if (evalSearchFilter.getIsChecked()) {
+            queryWrapper.isNotNull("after_sales_customer");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String currentTime = formatter.format(LocalDateTime.now());
+            queryWrapper.gt("contract_end_date", currentTime);
+            Date now = new Date();
+            Date before3Month;
+            // 获取日历
+            Calendar calendar = Calendar.getInstance();
+            // 当前时间赋值给日历
+            calendar.setTime(now);
+            // 前3个月
+            calendar.add(Calendar.MONTH, -3);
+            // 得到3个月之前的时间
+            before3Month = calendar.getTime();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            String formatBefore3Month = sdf.format(before3Month);
+            queryWrapper.lt("intersection_date", formatBefore3Month);
+            // 显示：无回访时间，有客户意见，六个月之外
+            calendar.add(Calendar.MONTH, -3);
+            Date before6Month = calendar.getTime();
+            String formatBefore6Month = sdf.format(before6Month);
+            queryWrapper.and(qw -> {
+                qw.lt("revisiting_time",formatBefore6Month)
+                        .or()
+                        .isNull("revisiting_time");
+            });
+            List<EvaluationEntity> checkList = list(queryWrapper);
+            return checkList;
+        }else {
+            List<EvaluationEntity> allDataList = list();
+            return allDataList;
+        }
+    }
+
 
 }
