@@ -65,6 +65,8 @@ public class ProStaConstant {
     public static final String ORDER_COUNT = "工单总数";
     public static final String UNFINISHED_ORDER = "未完结";
 
+    // 支付提醒
+    public static final String PAYMENT_REMINDER = "DICT售后服务智能中枢支付提醒";
     // 故障跟踪表
     public static final String EXP_REMINDER_SUB = "DICT售后服务智能中枢故障提醒";
     public static final String FIXED = "已修复";
