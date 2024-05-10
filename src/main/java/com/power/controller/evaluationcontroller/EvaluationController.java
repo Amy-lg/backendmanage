@@ -99,7 +99,22 @@ public class EvaluationController {
             // 通过工具类创建writer
             ExcelWriter writer = ExcelUtil.getWriter(true);
             // 自定义标题别名
-            //writer.addHeaderAlias("projectName", "拨测对象所属项目");
+            writer.addHeaderAlias("county", "区县");
+            writer.addHeaderAlias("projectNum", "项目编号");
+            writer.addHeaderAlias("projectName", "项目名称");
+            writer.addHeaderAlias("customerName", "集团客户名称");
+            writer.addHeaderAlias("afterSalesCustomer", "售后集团客户联系人");
+            writer.addHeaderAlias("afterSalesPhone", "售后集团客户联系人电话");
+            writer.addHeaderAlias("intersectionDate", "交维时间");
+            writer.addHeaderAlias("contractEndDate", "合同履行结束时间");
+            writer.addHeaderAlias("serviceAware", "业务感知");
+            writer.addHeaderAlias("afterSalesPersonnel", "售后人员");
+            writer.addHeaderAlias("afterSalesResponse", "售后响应");
+            writer.addHeaderAlias("serviceSatisfaction", "整体服务满意度");
+            writer.addHeaderAlias("customerAdvisement", "客户意见");
+            writer.addHeaderAlias("problemDescription", "问题描述");
+            writer.addHeaderAlias("revisitingTime", "回访时间");
+
             writer.write(evaluationList, true);
             String fileName = "客户满意度表";
             // 设置导出Excel的文件格式信息
