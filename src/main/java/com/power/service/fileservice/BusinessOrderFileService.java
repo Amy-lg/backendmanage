@@ -448,10 +448,47 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
             }
             storeCalcDataList.add(linkedHashMap);
         }
+        Map<String, Object> everyMonthOfAveDurationMap = calcAveDurationBefore6Month();
+        // 每月平均处理时长
+        storeCalcDataList.add(everyMonthOfAveDurationMap);
         // 返回之前删除第一个嘉禾数据
         storeCalcDataList.remove(1);
         storeCalcDataList.remove(6);
         return storeCalcDataList;
+    }
+
+
+    /**
+     * 计算前六个月每月的平均处理时长
+     * @return 返回月份平均值
+     */
+    private Map<String, Object> calcAveDurationBefore6Month() {
+        // Map存储集合
+        Map<String, Object> aveDurationMap = new LinkedHashMap<>();
+        for (int i = -5; i <= 0; i++) {
+            // 月份计算
+            String lastMonth = CalculateUtils.calcBeforeMonth(i);
+            QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.like("faulty_time", lastMonth);
+            // 查询出当前月份所有数据
+            List<BusinessOrderEntity> currentSearchMonthList = list(queryWrapper);
+            String currentMonthAveValue = "0.000";
+            if (currentSearchMonthList != null && currentSearchMonthList.size() >= 1) {
+                float durationSumOfMonth = 0f;
+                int currentMonthCount = currentSearchMonthList.size();
+                for (BusinessOrderEntity businessOrder : currentSearchMonthList) {
+                    String faultyDuration = businessOrder.getFaultyDuration();
+                    if (!StrUtil.isEmpty(faultyDuration)) {
+                        Float faultyDurationOfFloat = Float.parseFloat(faultyDuration);
+                        // 常量区县 = 数据中的区县 ==> 计算故障历时总和
+                        durationSumOfMonth += faultyDurationOfFloat;
+                    }
+                }
+                currentMonthAveValue = String.format("%.3f", (durationSumOfMonth / (float) currentMonthCount));
+            }
+            aveDurationMap.put(lastMonth, currentMonthAveValue);
+        }
+        return aveDurationMap;
     }
 
 

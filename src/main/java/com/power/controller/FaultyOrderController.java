@@ -49,9 +49,10 @@ public class FaultyOrderController {
     public Result queryFaultyOrderInfo() {
         Map<String, Object> faultyOrderCountMap = new HashMap<>();
         // 故障工单每月数量
-        List<Object> faultyOrderNum = faultyOrderService.getFaultyOrderNum();
+//        List<Object> faultyOrderNum = faultyOrderService.getFaultyOrderNum();
+        List<Integer> faultyOrderNum = faultyOrderService.faultyCountOfBefore12Month();
         // 小T工单每月数量
-        List<Object> tOrderCount = tOrderFileService.getTOrderCount();
+        List<Integer> tOrderCount = tOrderFileService.tOrderOfBefore12Month();
         faultyOrderCountMap.put("业务工单数量", faultyOrderNum);
         faultyOrderCountMap.put("小T工单数量", tOrderCount);
         if (faultyOrderCountMap != null) {
@@ -137,7 +138,10 @@ public class FaultyOrderController {
     }
 
 
-    // 工单总数
+    /**
+     * 能力分析模块---工单总数
+     * @return
+     */
     @GetMapping("/getAllOrder")
     public Result getOrderCount() {
 
@@ -185,6 +189,13 @@ public class FaultyOrderController {
         List<BasicInfoEntity> basicInfoEntityList = basicInfoService.list();
         List<Map<String, Object>> tOrderOfBefore6Month = tOrderFileService.getTOrderOfBefore6Month(basicInfoEntityList);
         map.put("小T工单前6月工单统计", tOrderOfBefore6Month);
+
+        // 业务工单月份故障平均处理时长
+        List<Map<String, Object>> busOrderAveDurByCounty = businessOrderFileService.calcBOrderAveDurationByCounty();
+        map.put("业务工单月份故障平均处理时长", busOrderAveDurByCounty);
+
+        List<Map<String, Object>> tOrderAveDurByCounty = tOrderFileService.calcTOrderAveDurationByCounty();
+        map.put("t工单月份故障平均处理时长", tOrderAveDurByCounty);
 
         return ResultUtils.success(map);
     }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.mapper.FaultyOrderMapper;
+import com.power.utils.CalculateUtils;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
@@ -88,4 +89,45 @@ public class FaultyOrderService extends ServiceImpl<FaultyOrderMapper, BusinessO
         countList.add(monthCount);
         return countList;
     }
+
+
+    /**
+     * 故障工单显示以当前月份往前倒退12月的数据
+     * @return
+     */
+    public List<Integer> faultyCountOfBefore12Month() {
+
+        List<BusinessOrderEntity> faultyList = list();
+        // Map<String, Integer> saveFaultyMonthCount = null;
+        List<Integer> saveFaultyMonthCountList = null;
+        if (faultyList != null && faultyList.size() >= 1) {
+            // saveFaultyMonthCount = new LinkedHashMap<>();
+            saveFaultyMonthCountList = new ArrayList<>();
+            try{
+                // 遍历前12月份
+                for (int monthCalc = -11; monthCalc <= 0; monthCalc++) {
+                    // 计算月份
+                    String formatBeforeMonth = CalculateUtils.calcBeforeMonth(monthCalc);
+                    // 计数
+                    int count = 0;
+                    // 遍历数据信息
+                    for (BusinessOrderEntity businessOrder : faultyList) {
+                        // 故障时间
+                        String faultyTime = businessOrder.getFaultyTime();
+                        String faultyMonth = faultyTime.substring(0, 7);
+                        if (formatBeforeMonth.equals(faultyMonth)) {
+                            count += 1;
+                        }
+                    }
+                    saveFaultyMonthCountList.add(count);
+                    //saveFaultyMonthCount.put(formatBeforeMonth, count);
+                }
+            }catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return saveFaultyMonthCountList;
+    }
+
+
 }

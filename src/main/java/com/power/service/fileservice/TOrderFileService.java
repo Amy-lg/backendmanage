@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.basic.BasicInfoEntity;
+import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.entity.fileentity.TOrderEntity;
 import com.power.mapper.filemapper.TOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
@@ -550,6 +551,8 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
             }
             storeCalcDataList.add(linkedHashMap);
         }
+        Map<String, Object> everyMonthOfAveDurationMap = calcAveDurationBefore6Month();
+        storeCalcDataList.add(everyMonthOfAveDurationMap);
         // 返回之前删除第一个嘉禾数据
         storeCalcDataList.remove(1);
         storeCalcDataList.remove(6);
@@ -593,6 +596,40 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
             }
         }
         return saveFaultyMonthCountList;
+    }
+
+
+    /**
+     * 计算前六个月每月的平均处理时长
+     * @return 返回月份平均值
+     */
+    private Map<String, Object> calcAveDurationBefore6Month() {
+        // Map存储集合
+        Map<String, Object> aveTDurationMap = new LinkedHashMap<>();
+        for (int i = -5; i <= 0; i++) {
+            // 月份计算
+            String lastMonth = CalculateUtils.calcBeforeMonth(i);
+            QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.like("dispatch_order_time", lastMonth);
+            // 查询出当前月份所有数据
+            List<TOrderEntity> currentSearchMonthList = list(queryWrapper);
+            String currentMonthAveValue = "0.000";
+            if (currentSearchMonthList != null && currentSearchMonthList.size() >= 1) {
+                float durationSumOfMonth = 0f;
+                int currentMonthCount = currentSearchMonthList.size();
+                for (TOrderEntity tOrder : currentSearchMonthList) {
+                    String orderDuration = tOrder.getOrderDuration();
+                    if (!StrUtil.isEmpty(orderDuration)) {
+                        Float faultyDurationOfFloat = Float.parseFloat(orderDuration);
+                        // 常量区县 = 数据中的区县 ==> 计算故障历时总和
+                        durationSumOfMonth += faultyDurationOfFloat;
+                    }
+                }
+                currentMonthAveValue = String.format("%.3f", (durationSumOfMonth / (float) currentMonthCount));
+            }
+            aveTDurationMap.put(lastMonth, currentMonthAveValue);
+        }
+        return aveTDurationMap;
     }
 
 
