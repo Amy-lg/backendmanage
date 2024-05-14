@@ -95,4 +95,22 @@ public class InspectionController {
         return ResultUtils.error(501, "设置备注信息的订单编号为空，请选择订单编号");
     }
 
+
+    /**
+     * 计算合格率
+     * @return
+     */
+    @GetMapping("/calcQuaRate")
+    public Result calcOrderPassRate() {
+
+        // 巡检工单当前月份各区县数量
+        Map<String, String> insOrderCountMap = inspectionService.insOrderCountOfCurrentMonth();
+
+        if (insOrderCountMap != null) {
+            return ResultUtils.success(insOrderCountMap);
+        }
+        return ResultUtils.success();
+    }
+
+
 }

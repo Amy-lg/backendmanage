@@ -13,14 +13,13 @@ import com.power.entity.proactiveservicesentity.ordertimeentity.OrderDealingTime
 import com.power.entity.proactiveservicesentity.visitingfiltersearch.InspectionFilterSearchEntity;
 import com.power.mapper.proactivemapper.InspectionMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.CalculateUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class InspectionService extends ServiceImpl<InspectionMapper, InspectionOrderEntity> {
@@ -345,6 +344,39 @@ public class InspectionService extends ServiceImpl<InspectionMapper, InspectionO
             return inspectionOrderTimeList;
         }
         return null;
+    }
+
+
+    /**
+     * 统计当前月份区县工单数量
+     * 无区县/嘉兴-->要客；南湖+秀洲-->嘉禾
+     * @return
+     */
+    public Map<String, String> insOrderCountOfCurrentMonth() {
+
+        QueryWrapper<InspectionOrderEntity> queryWrapper = new QueryWrapper<>();
+        HashMap<String, String> saveCountMap = new HashMap<>();
+        // 获取当前月份时间
+        String currentMonth = CalculateUtils.calcBeforeMonth(0);
+        String rate = "0.00";
+        // 遍历区县
+        for (String county : ProStaConstant.counties_jx) {
+            queryWrapper.like("county", county);
+            queryWrapper.like("create_date", currentMonth);
+            // 当前月工单总数
+            long allCount = this.count(queryWrapper);
+            // 查询备注工单数
+            queryWrapper.isNotNull("note");
+            long noteCount = count(queryWrapper);
+            // 直接计算出结果
+            if (allCount != 0) {
+                rate = String.format("%.2f", ((double) noteCount / (double) allCount));
+            }
+            saveCountMap.put(county, rate);
+        }
+        // 总合格率
+        saveCountMap.put("总合格率", rate);
+        return saveCountMap;
     }
 
 
