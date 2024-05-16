@@ -65,7 +65,20 @@ public class PubNetWebController {
             // 通过工具类创建writer
             ExcelWriter writer = ExcelUtil.getWriter(true);
             // 自定义标题别名
-//        writer.addHeaderAlias("projectName", "拨测对象所属项目");
+            writer.addHeaderAlias("projectName", "拨测对象所属项目");
+            writer.addHeaderAlias("equipmentName", "关联设备名称");
+            writer.addHeaderAlias("city", "地市");
+            writer.addHeaderAlias("county", "区县");
+            writer.addHeaderAlias("destinationAddress", "目标地址");
+            writer.addHeaderAlias("dialTime", "最新拨测时间");
+            writer.addHeaderAlias("taskStatus", "任务状态");
+            writer.addHeaderAlias("dialResult", "最新拨测结果");
+            writer.addHeaderAlias("downloadRate", "下载速率(Kbps)");
+            writer.addHeaderAlias("loadingDelay", "网页加载时延(ms)");
+            writer.addHeaderAlias("accessDelay", "网页访问时延(ms)");
+            writer.addHeaderAlias("dnsDelay", "DNS解析时延(ms)");
+            writer.addHeaderAlias("projectStatus", "项目状态");
+
             writer.write(pubNetWebList, true);
             String fileName = "公网Web拨测";
             // 设置导出Excel的文件格式信息

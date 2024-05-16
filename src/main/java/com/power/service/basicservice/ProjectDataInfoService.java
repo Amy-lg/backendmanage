@@ -14,6 +14,7 @@ import com.power.entity.basic.filtersearch.DataInfoFilter;
 import com.power.mapper.basicmapper.ProjectDataInfoMapper;
 import com.power.utils.AnalysisExcelUtils;
 import com.power.utils.CalculateUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -171,18 +172,51 @@ public class ProjectDataInfoService extends ServiceImpl<ProjectDataInfoMapper, P
         IPage<ProjectDataInfoEntity> dataInfoPage = new Page<>(pageNum, pageSize);
         QueryWrapper<ProjectDataInfoEntity> queryWrapper = new QueryWrapper<>();
 
-        // 模糊搜索
+        // 模糊搜索条件
         String ictNum = dataInfoFilter.getIctNum();
+        // 筛选条件
+        String projectName = dataInfoFilter.getProjectName();
+        String county = dataInfoFilter.getCounty();
+        String constructionMethod = dataInfoFilter.getConstructionMethod();
+        String integratedTietong = dataInfoFilter.getIntegratedTietong();
+        // 管理员权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)) {
+                queryWrapper.eq("county", projectCounty);
+                if (ictNum != null) {
+                    queryWrapper.like("ict_num", ictNum);
+                    IPage<ProjectDataInfoEntity> authoritySearchPage = page(dataInfoPage, queryWrapper);
+                    return authoritySearchPage;
+                }
+                if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(constructionMethod) ||
+                        !StrUtil.isEmpty(integratedTietong)) {
+                    if (!StrUtil.isBlank(projectName)) {
+                        queryWrapper.eq("project_name", projectName);
+                    }
+                    if (!StrUtil.isBlank(constructionMethod)) {
+                        queryWrapper.eq("construction_method", constructionMethod);
+                    }
+                    if (!StrUtil.isBlank(integratedTietong)) {
+                        queryWrapper.eq("integrated_tietong", integratedTietong);
+                    }
+                    IPage<ProjectDataInfoEntity> authorityFilterPage = page(dataInfoPage, queryWrapper);
+                    return authorityFilterPage;
+                }
+                IPage<ProjectDataInfoEntity> authorityPage = page(dataInfoPage, queryWrapper);
+                return authorityPage;
+            }
+        }
+
+        // 模糊检索
         if (ictNum != null) {
             queryWrapper.like("ict_num", ictNum);
             IPage<ProjectDataInfoEntity> searchPage = page(dataInfoPage, queryWrapper);
             return searchPage;
         }
         // 筛选
-        String projectName = dataInfoFilter.getProjectName();
-        String county = dataInfoFilter.getCounty();
-        String constructionMethod = dataInfoFilter.getConstructionMethod();
-        String integratedTietong = dataInfoFilter.getIntegratedTietong();
         if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(county) ||
                 !StrUtil.isEmpty(constructionMethod) || !StrUtil.isEmpty(integratedTietong)) {
             if (!StrUtil.isBlank(projectName)) {

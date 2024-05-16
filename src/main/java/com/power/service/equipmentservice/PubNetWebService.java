@@ -8,10 +8,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.common.util.CommonUtil;
+import com.power.entity.User;
 import com.power.entity.equipment.PubNetWebEntity;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.PubNetWebMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -335,6 +337,46 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
         // 搜索功能；查看搜索条件是否为空
         String projectName = dialFilterQuery.getProjectName();
         String targetAddress = dialFilterQuery.getTargetIp();
+
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+        // 管理员权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)){
+                queryWrapper.eq("county", projectCounty);
+                if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetAddress)) {
+                    if (!StrUtil.isEmpty(projectName)) {
+                        queryWrapper.like("project_name", projectName);
+                    }
+                    if (!StrUtil.isEmpty(targetAddress)) {
+                        queryWrapper.like("destination_address", targetAddress);
+                    }
+                    IPage<PubNetWebEntity> authoritySearchPage = page(pubNetWebEntityPage, queryWrapper);
+                    return authoritySearchPage;
+                }
+                if (!StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+                    if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                        queryWrapper.eq("dial_result", true);
+                    }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                        queryWrapper.eq("dial_result", false);
+                    }
+                    if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                        queryWrapper.eq("task_status", true);
+                    } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                        queryWrapper.eq("task_status", false);
+                    }
+                    IPage<PubNetWebEntity> authorityFilterPage = page(pubNetWebEntityPage, queryWrapper);
+                    return authorityFilterPage;
+                }
+                IPage authorityPage = page(pubNetWebEntityPage, queryWrapper);
+                return authorityPage;
+            }
+        }
+
         // 搜搜判断
         if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetAddress)) {
             if (!StrUtil.isEmpty(projectName)) {
@@ -347,9 +389,6 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
             return searchPage;
         }
         // 筛选判断
-        String county = dialFilterQuery.getCounty();
-        String dialResult = dialFilterQuery.getDialResult();
-        String taskResult = dialFilterQuery.getTaskStatus();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("county", county);
@@ -405,6 +444,47 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
         // 搜索功能；查看搜索条件是否为空
         String projectName = dialFilterQuery.getProjectName();
         String targetAddress = dialFilterQuery.getTargetIp();
+
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+
+        // 管理员权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)){
+                queryWrapper.eq("county", projectCounty);
+                if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetAddress)) {
+                    if (!StrUtil.isEmpty(projectName)) {
+                        queryWrapper.like("project_name", projectName);
+                    }
+                    if (!StrUtil.isEmpty(targetAddress)) {
+                        queryWrapper.like("destination_address", targetAddress);
+                    }
+                    List<PubNetWebEntity> authoritySearchList = list(queryWrapper);
+                    return authoritySearchList;
+                }
+                if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+                    if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                        queryWrapper.eq("dial_result", true);
+                    }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                        queryWrapper.eq("dial_result", false);
+                    }
+                    if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                        queryWrapper.eq("task_status", true);
+                    } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                        queryWrapper.eq("task_status", false);
+                    }
+                    List<PubNetWebEntity> authorityFilterList = list(queryWrapper);
+                    return authorityFilterList;
+                }
+                List<PubNetWebEntity> authorityPage = list(queryWrapper);
+                return authorityPage;
+            }
+        }
+
         // 搜搜判断
         if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetAddress)) {
             if (!StrUtil.isEmpty(projectName)) {
@@ -417,9 +497,6 @@ public class PubNetWebService extends ServiceImpl<PubNetWebMapper, PubNetWebEnti
             return searchList;
         }
         // 筛选判断
-        String county = dialFilterQuery.getCounty();
-        String dialResult = dialFilterQuery.getDialResult();
-        String taskResult = dialFilterQuery.getTaskStatus();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("county", county);

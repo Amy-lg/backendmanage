@@ -1,15 +1,18 @@
 package com.power.service.equipmentservice;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.User;
 import com.power.entity.equipment.IndustryVideoEntity;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.IndustryVideoMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +32,20 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
     public IPage<IndustryVideoEntity> queryIndustryVideoInfo(Integer pageNum, Integer pageSize) {
         IPage industryPage = new Page<IndustryVideoEntity>(pageNum, pageSize);
         QueryWrapper<IndustryVideoEntity> queryWrapper = new QueryWrapper<>();
+
+        // 管理员权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)){
+                queryWrapper.eq("county", projectCounty);
+                queryWrapper.isNotNull("project_name").ne("project_name", "");
+                IPage authorityPage = page(industryPage, queryWrapper);
+                return authorityPage;
+            }
+        }
+        // 超级管理员权限
         // 筛选指定字段 不为空或为空字符串的情况
         queryWrapper.isNotNull("project_name").ne("project_name", "");
         IPage pages = this.page(industryPage, queryWrapper);
@@ -245,6 +262,18 @@ public class IndustryVideoService extends ServiceImpl<IndustryVideoMapper, Indus
     public List<IndustryVideoEntity> searchOrFilterByExport() {
 
         QueryWrapper<IndustryVideoEntity> queryWrapper = new QueryWrapper<>();
+        // 根据登录者权限导出
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)){
+                queryWrapper.eq("county", projectCounty);
+                queryWrapper.isNotNull("project_name").ne("project_name", "");
+                List<IndustryVideoEntity> authorityList = list(queryWrapper);
+                return authorityList;
+            }
+        }
         // 筛选指定字段 不为空或为空字符串的情况
         queryWrapper.isNotNull("project_name").ne("project_name", "");
         List<IndustryVideoEntity> list = this.list(queryWrapper);

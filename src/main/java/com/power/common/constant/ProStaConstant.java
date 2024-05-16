@@ -73,6 +73,10 @@ public class ProStaConstant {
     // 推送邮件接收人常量设置
     public static final String TO_EMAIL = "18867119065@139.com";
 
+    // 权限常量
+    public static final String MANAGER = "管理员";
+    public static final String SUPER_MANAGER = "超级管理员";
+
     public static final String[] counties = {CUSTOMER, JIA_HE, PING_HU, JIA_SHAN, TONG_XIANG, HAI_NING,
             HAI_YAN, XIU_ZHOU, NAN_HU};
 

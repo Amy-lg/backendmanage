@@ -63,7 +63,22 @@ public class IndustryVideoController {
             // 通过工具类创建writer
             ExcelWriter writer = ExcelUtil.getWriter(true);
             // 自定义标题别名
-//        writer.addHeaderAlias("projectName", "拨测对象所属项目");
+            writer.addHeaderAlias("cameraStatus", "摄像头状态");
+            writer.addHeaderAlias("resourceEncoding", "资源编码");
+            writer.addHeaderAlias("domainEncoding", "域编码");
+            writer.addHeaderAlias("projectName", "项目名称");
+            writer.addHeaderAlias("projectNum", "项目编码");
+            writer.addHeaderAlias("equipmentName", "设备名称");
+            writer.addHeaderAlias("equipmentIp", "设备IP地址");
+            writer.addHeaderAlias("city", "地市");
+            writer.addHeaderAlias("county", "区县");
+            writer.addHeaderAlias("industry", "行业");
+            writer.addHeaderAlias("maintenanceSubject", "维护主体");
+            writer.addHeaderAlias("e55Charging", "e55计费号");
+            writer.addHeaderAlias("lensId", "第三方镜头ID");
+            writer.addHeaderAlias("lensName", "镜头名称");
+            writer.addHeaderAlias("projectStatus", "项目状态");
+
             writer.write(industryVideoList, true);
             String fileName = "行业视频";
             // 设置导出Excel的文件格式信息

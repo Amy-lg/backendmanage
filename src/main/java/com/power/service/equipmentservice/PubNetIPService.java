@@ -8,10 +8,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.common.util.CommonUtil;
+import com.power.entity.User;
 import com.power.entity.equipment.PubNetIPEntity;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.PubNetIPMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -343,6 +345,46 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
         // 搜索功能；查看搜索条件是否为空
         String projectName = dialFilterQuery.getProjectName();
         String targetIp = dialFilterQuery.getTargetIp();
+
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+
+        // 管理员权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            queryWrapper.eq("county", projectCounty);
+            if (!StrUtil.isEmpty(projectCounty)){
+                if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
+                    if (!StrUtil.isEmpty(projectName)) {
+                        queryWrapper.like("project_name", projectName);
+                    }
+                    if (!StrUtil.isEmpty(targetIp)) {
+                        queryWrapper.like("destination_ip", targetIp);
+                    }
+                    IPage<PubNetIPEntity> authoritySearchPage = page(pubNetIPEntityPage, queryWrapper);
+                    return authoritySearchPage;
+                }
+                if (!StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+                    if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                        queryWrapper.eq("dial_result", true);
+                    }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                        queryWrapper.eq("dial_result", false);
+                    }
+                    if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                        queryWrapper.eq("task_status", true);
+                    } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                        queryWrapper.eq("task_status", false);
+                    }
+                    IPage<PubNetIPEntity> authorityFilterPage = page(pubNetIPEntityPage, queryWrapper);
+                    return authorityFilterPage;
+                }
+                return page(pubNetIPEntityPage, queryWrapper);
+            }
+        }
+
         // 搜搜判断
         if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
             if (!StrUtil.isEmpty(projectName)) {
@@ -355,9 +397,6 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
             return searchPage;
         }
         // 筛选判断
-        String county = dialFilterQuery.getCounty();
-        String dialResult = dialFilterQuery.getDialResult();
-        String taskResult = dialFilterQuery.getTaskStatus();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("county", county);
@@ -391,6 +430,45 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
         // 搜索功能；查看搜索条件是否为空
         String projectName = dialFilterQuery.getProjectName();
         String targetIp = dialFilterQuery.getTargetIp();
+        // 筛选
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+
+        // 根据当前登录者权限导出
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            queryWrapper.eq("county", projectCounty);
+            if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
+                if (!StrUtil.isEmpty(projectName)) {
+                    queryWrapper.like("project_name", projectName);
+                }
+                if (!StrUtil.isEmpty(targetIp)) {
+                    queryWrapper.like("destination_ip", targetIp);
+                }
+                List<PubNetIPEntity> authoritySearchList = list(queryWrapper);
+                return authoritySearchList;
+            }
+            if (!StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+                if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                    queryWrapper.eq("dial_result", true);
+                }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                    queryWrapper.eq("dial_result", false);
+                }
+                if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                    queryWrapper.eq("task_status", true);
+                } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                    queryWrapper.eq("task_status", false);
+                }
+                List<PubNetIPEntity> authorityFilterList = list(queryWrapper);
+                return authorityFilterList;
+            }
+            List<PubNetIPEntity> authorityList = list(queryWrapper);
+            return authorityList;
+        }
+
         // 搜搜判断
         if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
             if (!StrUtil.isEmpty(projectName)) {
@@ -403,9 +481,6 @@ public class PubNetIPService extends ServiceImpl<PubNetIPMapper, PubNetIPEntity>
             return searchList;
         }
         // 筛选判断
-        String county = dialFilterQuery.getCounty();
-        String dialResult = dialFilterQuery.getDialResult();
-        String taskResult = dialFilterQuery.getTaskStatus();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("county", county);

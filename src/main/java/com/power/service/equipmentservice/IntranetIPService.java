@@ -8,11 +8,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.common.util.CommonUtil;
+import com.power.entity.User;
 import com.power.entity.equipment.IntranetIPEntity;
 import com.power.entity.equipment.pojo.MatchCountyPojo;
 import com.power.entity.query.DialFilterQuery;
 import com.power.mapper.equipmentmapper.IntranetIPMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -130,6 +132,49 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
         // 搜索功能；查看搜索条件是否为空
         String projectName = dialFilterQuery.getProjectName();
         String targetIp = dialFilterQuery.getTargetIp();
+
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+
+        // 管理员权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)){
+                queryWrapper.eq("target_county", projectCounty);
+                // 权限搜索
+                if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
+                    if (!StrUtil.isEmpty(projectName)) {
+                        queryWrapper.like("project_name", projectName);
+                    }
+                    if (!StrUtil.isEmpty(targetIp)) {
+                        queryWrapper.like("target_ip", targetIp);
+                    }
+                    IPage<IntranetIPEntity> authoritySearchPage = page(intranetPage, queryWrapper);
+                    return authoritySearchPage;
+                }
+                // 权限筛选
+                if (!StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+                    if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                        queryWrapper.eq("dial_status", true);
+                    }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                        queryWrapper.eq("dial_status", false);
+                    }
+                    if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                        queryWrapper.eq("task_status", true);
+                    } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                        queryWrapper.eq("task_status", false);
+                    }
+                    IPage<IntranetIPEntity> authorityFilterPage = page(intranetPage, queryWrapper);
+                    return authorityFilterPage;
+                }
+                IPage<IntranetIPEntity> authorityPage = page(intranetPage, queryWrapper);
+                return authorityPage;
+            }
+        }
+
         // 搜搜判断
         if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
             if (!StrUtil.isEmpty(projectName)) {
@@ -142,9 +187,6 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
             return searchPage;
         }
         // 筛选判断
-        String county = dialFilterQuery.getCounty();
-        String dialResult = dialFilterQuery.getDialResult();
-        String taskResult = dialFilterQuery.getTaskStatus();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("target_county", county);
@@ -178,6 +220,47 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
         // 搜索功能；查看搜索条件是否为空
         String projectName = dialFilterQuery.getProjectName();
         String targetIp = dialFilterQuery.getTargetIp();
+
+        String county = dialFilterQuery.getCounty();
+        String dialResult = dialFilterQuery.getDialResult();
+        String taskResult = dialFilterQuery.getTaskStatus();
+
+        // 根据登录者权限导出
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)){
+                queryWrapper.eq("target_county", projectCounty);
+                if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
+                    if (!StrUtil.isEmpty(projectName)) {
+                        queryWrapper.like("project_name", projectName);
+                    }
+                    if (!StrUtil.isEmpty(targetIp)) {
+                        queryWrapper.like("target_ip", targetIp);
+                    }
+                    List<IntranetIPEntity> authoritySearchList = list(queryWrapper);
+                    return authoritySearchList;
+                }
+                if (!StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
+                    if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.OPEN)) {
+                        queryWrapper.eq("dial_status", true);
+                    }else if (!StrUtil.isEmpty(dialResult) && dialResult.equals(ProStaConstant.CLOSE)){
+                        queryWrapper.eq("dial_status", false);
+                    }
+                    if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.NORMAL)) {
+                        queryWrapper.eq("task_status", true);
+                    } else if (!StrUtil.isEmpty(taskResult) && taskResult.equals(ProStaConstant.STOP)) {
+                        queryWrapper.eq("task_status", false);
+                    }
+                    List<IntranetIPEntity> authorityFilterList = list(queryWrapper);
+                    return authorityFilterList;
+                }
+                List<IntranetIPEntity> authorityList = list(queryWrapper);
+                return authorityList;
+            }
+        }
+
         // 搜搜判断
         if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(targetIp)) {
             if (!StrUtil.isEmpty(projectName)) {
@@ -190,9 +273,6 @@ public class IntranetIPService extends ServiceImpl<IntranetIPMapper, IntranetIPE
             return searchList;
         }
         // 筛选判断
-        String county = dialFilterQuery.getCounty();
-        String dialResult = dialFilterQuery.getDialResult();
-        String taskResult = dialFilterQuery.getTaskStatus();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(dialResult) || !StrUtil.isEmpty(taskResult)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("target_county", county);

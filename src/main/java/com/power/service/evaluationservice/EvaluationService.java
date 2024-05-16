@@ -8,10 +8,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.common.util.CommonUtil;
+import com.power.entity.User;
 import com.power.entity.evaluation.EvaluationEntity;
 import com.power.entity.evaluation.searchfilter.EvalSearchFilterEntity;
 import com.power.mapper.evaluationmapper.EvaluationMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -305,6 +307,83 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
         String projectNum = evalSearchFilter.getProjectNum();
         // 项目名称
         String projectName = evalSearchFilter.getProjectName();
+        // 筛选条件
+        String county = evalSearchFilter.getCounty();
+        String serviceSatisfaction = evalSearchFilter.getServiceSatisfaction();
+        // 登录者权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)) {
+                String currentUserCounty = projectCounty.substring(0, 2);
+                queryWrapper.eq("county", currentUserCounty);
+                if (!StrUtil.isEmpty(projectNum) || !StrUtil.isEmpty(projectName)) {
+                    if (!StrUtil.isEmpty(projectNum)) {
+                        queryWrapper.like("project_num", projectNum);
+                    }
+                    if (!StrUtil.isEmpty(projectName)) {
+                        queryWrapper.like("project_name", projectName);
+                    }
+                    IPage<EvaluationEntity> authoritySearchPage = page(evaluationPages, queryWrapper);
+                    return authoritySearchPage;
+                }
+                if (!StrUtil.isEmpty(serviceSatisfaction)) {
+                    // 满意
+                    if (ProStaConstant.SATISFIED.equals(serviceSatisfaction)) {
+                        queryWrapper.eq("service_aware", 10).or().isNull("service_aware");
+                        queryWrapper.eq("after_sales_personnel", 10).or().isNull("after_sales_personnel");
+                        queryWrapper.eq("after_sales_response", 10).or().isNull("after_sales_response");
+                        queryWrapper.eq("service_satisfaction", 10);
+                        // 非满意
+                    } else if (ProStaConstant.UNSATISFIED.equals(serviceSatisfaction)) {
+                        queryWrapper.ne("service_aware", 10).or().isNull("service_aware");
+                        queryWrapper.ne("after_sales_personnel", 10).or().isNull("after_sales_personnel");
+                        queryWrapper.ne("after_sales_response", 10).or().isNull("after_sales_response");
+                        queryWrapper.ne("service_satisfaction", 10).or().isNull("service_satisfaction");
+                    } else {
+                        queryWrapper.eq("service_satisfaction", serviceSatisfaction);
+                    }
+                    IPage<EvaluationEntity> authorityFilterPage = page(evaluationPages, queryWrapper);
+                    return authorityFilterPage;
+                }
+
+                boolean isCheck = evalSearchFilter.getIsChecked();
+                if (isCheck) {
+                    queryWrapper.isNotNull("after_sales_customer");
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                    String currentTime = formatter.format(LocalDateTime.now());
+                    queryWrapper.gt("contract_end_date", currentTime);
+                    Date now = new Date();
+                    Date before3Month;
+                    // 获取日历
+                    Calendar calendar = Calendar.getInstance();
+                    // 当前时间赋值给日历
+                    calendar.setTime(now);
+                    // 前3个月
+                    calendar.add(Calendar.MONTH, -3);
+                    // 得到3个月之前的时间
+                    before3Month = calendar.getTime();
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    String formatBefore3Month = sdf.format(before3Month);
+                    queryWrapper.lt("intersection_date", formatBefore3Month);
+                    calendar.add(Calendar.MONTH, -3);
+                    Date before6Month = calendar.getTime();
+                    String formatBefore6Month = sdf.format(before6Month);
+                    queryWrapper.and(qw -> {
+                        qw.lt("revisiting_time",formatBefore6Month)
+                                .or()
+                                .isNull("revisiting_time");
+                    });
+                    // 预估
+                    IPage<EvaluationEntity> checkPages = page(evaluationPages, queryWrapper);
+                    return checkPages;
+                }
+                IPage<EvaluationEntity> authorityPage = page(evaluationPages, queryWrapper);
+                return authorityPage;
+            }
+        }
+
         // 搜索
         if (!StrUtil.isEmpty(projectNum) || !StrUtil.isEmpty(projectName)) {
             if (!StrUtil.isEmpty(projectNum)) {
@@ -317,8 +396,6 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
             return searchPage;
         }
         // 筛选
-        String county = evalSearchFilter.getCounty();
-        String serviceSatisfaction = evalSearchFilter.getServiceSatisfaction();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(serviceSatisfaction)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("county", county);
@@ -499,6 +576,68 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
         QueryWrapper<EvaluationEntity> queryWrapper = new QueryWrapper<>();
         String projectNum = evalSearchFilter.getProjectNum();
         String projectName = evalSearchFilter.getProjectName();
+        // 筛选条件
+        String county = evalSearchFilter.getCounty();
+        String serviceSatisfaction = evalSearchFilter.getServiceSatisfaction();
+        // 管理者权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)) {
+                String currentUserCounty = projectCounty.substring(0, 2);
+                queryWrapper.eq("county", currentUserCounty);
+                if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(projectNum)) {
+                    if (!StrUtil.isEmpty(projectName)) {
+                        queryWrapper.like("project_name", projectName);
+                    }
+                    if (!StrUtil.isEmpty(projectNum)) {
+                        queryWrapper.like("project_num", projectNum);
+                    }
+                    List<EvaluationEntity> authoritySearchList = list(queryWrapper);
+                    return authoritySearchList;
+                }
+                if (!StrUtil.isEmpty(serviceSatisfaction)) {
+                    queryWrapper.like("service_satisfaction", serviceSatisfaction);
+                    List<EvaluationEntity> authorityFilterList = list(queryWrapper);
+                    return authorityFilterList;
+                }
+                // 评估
+                if (evalSearchFilter.getIsChecked()) {
+                    queryWrapper.isNotNull("after_sales_customer");
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                    String currentTime = formatter.format(LocalDateTime.now());
+                    queryWrapper.gt("contract_end_date", currentTime);
+                    Date now = new Date();
+                    Date before3Month;
+                    // 获取日历
+                    Calendar calendar = Calendar.getInstance();
+                    // 当前时间赋值给日历
+                    calendar.setTime(now);
+                    // 前3个月
+                    calendar.add(Calendar.MONTH, -3);
+                    // 得到3个月之前的时间
+                    before3Month = calendar.getTime();
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    String formatBefore3Month = sdf.format(before3Month);
+                    queryWrapper.lt("intersection_date", formatBefore3Month);
+                    // 显示：无回访时间，有客户意见，六个月之外
+                    calendar.add(Calendar.MONTH, -3);
+                    Date before6Month = calendar.getTime();
+                    String formatBefore6Month = sdf.format(before6Month);
+                    queryWrapper.and(qw -> {
+                        qw.lt("revisiting_time", formatBefore6Month)
+                                .or()
+                                .isNull("revisiting_time");
+                    });
+                    List<EvaluationEntity> authorityCheckList = list(queryWrapper);
+                    return authorityCheckList;
+                }
+                List<EvaluationEntity> authorityList = list();
+                return authorityList;
+            }
+        }
+        // 超级管理员权限
         // 检索判断
         if (!StrUtil.isEmpty(projectName) || !StrUtil.isEmpty(projectNum)) {
             if (!StrUtil.isEmpty(projectName)) {
@@ -511,8 +650,6 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
             return searchList;
         }
         // 筛选
-        String county = evalSearchFilter.getCounty();
-        String serviceSatisfaction = evalSearchFilter.getServiceSatisfaction();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(serviceSatisfaction)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.like("county", county);

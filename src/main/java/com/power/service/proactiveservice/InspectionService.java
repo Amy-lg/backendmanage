@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.User;
 import com.power.entity.dto.NoteInfoEntity;
 import com.power.entity.proactiveservicesentity.InspectionOrderEntity;
 import com.power.entity.proactiveservicesentity.ordertimeentity.OrderDealingTimeEntity;
@@ -14,6 +15,7 @@ import com.power.entity.proactiveservicesentity.visitingfiltersearch.InspectionF
 import com.power.mapper.proactivemapper.InspectionMapper;
 import com.power.utils.AnalysisExcelUtils;
 import com.power.utils.CalculateUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,6 +59,35 @@ public class InspectionService extends ServiceImpl<InspectionMapper, InspectionO
 
         String orderNum = inspectionFilterSearch.getOrderNum();
         String inspectionProject = inspectionFilterSearch.getInspectionProject();
+        String county = inspectionFilterSearch.getCounty();
+        String orderStatus = inspectionFilterSearch.getOrderStatus();
+        // 登录者权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)) {
+                queryWrapper.eq("county", projectCounty);
+                if (!StrUtil.isEmpty(orderNum) || !StrUtil.isEmpty(inspectionProject)) {
+                    if (!StrUtil.isBlank(orderNum)) {
+                        queryWrapper.like("order_num", orderNum);
+                    }
+                    if (!StrUtil.isBlank(inspectionProject)) {
+                        queryWrapper.like("inspection_project", inspectionProject);
+                    }
+                    IPage<InspectionOrderEntity> authoritySearchPage = page(inspectionOrderPage, queryWrapper);
+                    return authoritySearchPage;
+                }
+                if (!StrUtil.isEmpty(orderStatus)) {
+                    queryWrapper.eq("order_status", orderStatus);
+                    IPage<InspectionOrderEntity> authorityFilterPage = page(inspectionOrderPage, queryWrapper);
+                    return authorityFilterPage;
+                }
+                IPage authorityPage = page(inspectionOrderPage, queryWrapper);
+                return authorityPage;
+            }
+        }
+        // 超级管理者权限
         // 搜搜判断
         if (!StrUtil.isEmpty(orderNum) || !StrUtil.isEmpty(inspectionProject)) {
             if (!StrUtil.isEmpty(orderNum)) {
@@ -69,8 +100,7 @@ public class InspectionService extends ServiceImpl<InspectionMapper, InspectionO
             return searchPage;
         }
 
-        String county = inspectionFilterSearch.getCounty();
-        String orderStatus = inspectionFilterSearch.getOrderStatus();
+        // 筛选
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(orderStatus)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("county", county);

@@ -7,10 +7,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.User;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.mapper.filemapper.BusinessOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
 import com.power.utils.CalculateUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,6 +62,47 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
         // 根据订单号模糊查询
         IPage<BusinessOrderEntity> businessOrderPage = new Page<>(pageNum, pageSize);
         QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
+
+        // 管理员
+        // 登录人员权限限制问题（只显示登录人员自己所在区县的数据）
+        User currentUser = TokenUtils.getCurrentUser();
+        // 用户角色
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            // 获取当前登录者所在区县
+            String projectCounty = currentUser.getProjectCounty();
+            // 固定权限查询条件（权限问题必须加入）
+            queryWrapper.eq("county", projectCounty);
+            // 权限中的检索
+            if (!StrUtil.isEmpty(orderNum) && dates == null) {
+                queryWrapper.like("order_num", orderNum);
+                IPage<BusinessOrderEntity> orderIPage = page(businessOrderPage, queryWrapper);
+                return orderIPage;
+            }
+            // 权限中的筛选
+            if ((dates != null) && StrUtil.isEmpty(orderNum)) {
+                // 获取开始时间结束时间
+                String beginDate = dates.get(0);
+                String beginDateTime = beginDate + " 00:00:00";
+                String endDate = dates.get(1);
+                String endDateTime = endDate + " 23:59:59";
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Date beginTime = sdf.parse(beginDateTime);
+                    Date endTime = sdf.parse(endDateTime);
+                    queryWrapper.between("faulty_time", beginTime, endTime);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+                IPage<BusinessOrderEntity> filterPage = page(businessOrderPage, queryWrapper);
+                return filterPage;
+            }
+            // 权限检索所有，只展示登录者所在区县的数据信息
+            IPage<BusinessOrderEntity> authorityPage = page(businessOrderPage, queryWrapper);
+            return authorityPage;
+        }
+
+        // 超级管理员
         // 如果都为空，那么查询所有
         if (StrUtil.isEmpty(orderNum) && (dates == null || dates.size() == 0)) {
             IPage<BusinessOrderEntity> allPage = this.page(businessOrderPage, queryWrapper);

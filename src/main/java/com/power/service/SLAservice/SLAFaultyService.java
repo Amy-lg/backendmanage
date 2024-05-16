@@ -5,11 +5,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.User;
 import com.power.entity.slaentity.SLAFaultyEntity;
 import com.power.entity.slaentity.filter.SlaFaultyFilter;
 import com.power.mapper.SLAmapper.SLAFaultyMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -251,15 +254,45 @@ public class SLAFaultyService extends ServiceImpl<SLAFaultyMapper, SLAFaultyEnti
 
             // 搜索
             String ictNum = slaFaultyFilter.getIctNum();
+            // 获取筛选条件
+            String county = slaFaultyFilter.getCounty();
+            String visitFrequency = slaFaultyFilter.getVisitFrequency();
+            String inspectionFrequency = slaFaultyFilter.getInspectionFrequency();
+
+            //管理员权限
+            User currentUser = TokenUtils.getCurrentUser();
+            String userRole = currentUser.getRole();
+            if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+                String projectCounty = currentUser.getProjectCounty();
+                if (!StrUtil.isEmpty(projectCounty)) {
+                    String currentUserCounty = projectCounty.substring(0,2);
+                    queryWrapper.eq("county", currentUserCounty);
+                    if (StringUtils.hasLength(ictNum)) {
+                        queryWrapper.eq("ict_num", ictNum);
+                        IPage<SLAFaultyEntity> authoritySearchPage = page(page, queryWrapper);
+                        return authoritySearchPage;
+                    }
+                    if (!StrUtil.isEmpty(visitFrequency) || !StrUtil.isEmpty(inspectionFrequency)) {
+                        if (!StrUtil.isBlank(visitFrequency)) {
+                            queryWrapper.eq("visit_frequency", visitFrequency);
+                        }
+                        if (!StrUtil.isBlank(inspectionFrequency)) {
+                            queryWrapper.eq("inspection_frequency", inspectionFrequency);
+                        }
+                        IPage<SLAFaultyEntity> authorityFilterPage = page(page, queryWrapper);
+                        return authorityFilterPage;
+                    }
+                    IPage<SLAFaultyEntity> authorityPage = page(page, queryWrapper);
+                    return authorityPage;
+                }
+            }
+            // 超级管理员检索
             if (StringUtils.hasLength(ictNum)) {
                 queryWrapper.eq("ict_num", ictNum);
                 IPage<SLAFaultyEntity> searchPage = this.page(page, queryWrapper);
                 return searchPage;
             }
-            // 获取筛选条件
-            String county = slaFaultyFilter.getCounty();
-            String visitFrequency = slaFaultyFilter.getVisitFrequency();
-            String inspectionFrequency = slaFaultyFilter.getInspectionFrequency();
+            // 筛选
             if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(visitFrequency) || !StrUtil.isEmpty(inspectionFrequency)) {
                 if (!StrUtil.isEmpty(county)) {
                     queryWrapper.eq("county", county);
@@ -274,7 +307,7 @@ public class SLAFaultyService extends ServiceImpl<SLAFaultyMapper, SLAFaultyEnti
                 return filterPage;
             }
             IPage<SLAFaultyEntity> searchAllPage = this.page(page);
-            return page;
+            return searchAllPage;
         }
         return null;
     }

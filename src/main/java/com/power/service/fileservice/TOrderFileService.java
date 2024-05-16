@@ -7,12 +7,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.User;
 import com.power.entity.basic.BasicInfoEntity;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.entity.fileentity.TOrderEntity;
 import com.power.mapper.filemapper.TOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
 import com.power.utils.CalculateUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -245,6 +247,44 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
 
         IPage<TOrderEntity> tOrderPage = new Page<>(pageNum, pageSize);
         QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+
+        // 管理员权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            queryWrapper.eq("county", projectCounty);
+
+            // 权限检索
+            if (!StrUtil.isEmpty(orderNum) && dates == null) {
+                queryWrapper.like("order_num", orderNum);
+                IPage<TOrderEntity> tOrderIPage = this.page(tOrderPage, queryWrapper);
+                return tOrderIPage;
+            }
+            // 权限筛选
+            if ((dates != null) && StrUtil.isEmpty(orderNum)) {
+                // 获取开始时间结束时间
+                String beginDate = dates.get(0);
+                String beginDateTime = beginDate + " 00:00:00";
+                String endDate = dates.get(1);
+                String endDateTime = endDate + " 23:59:59";
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Date beginTime = sdf.parse(beginDateTime);
+                    Date endTime = sdf.parse(endDateTime);
+                    queryWrapper.between("dispatch_order_time", beginTime, endTime);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+                IPage<TOrderEntity> filterPage = this.page(tOrderPage, queryWrapper);
+                return filterPage;
+            }
+            queryWrapper.orderByDesc("id");
+            IPage<TOrderEntity> authorityPage = page(tOrderPage, queryWrapper);
+            return authorityPage;
+        }
+
+        // 超级管理员
         if (StrUtil.isEmpty(orderNum) && (dates == null || dates.size() == 0)) {
             queryWrapper.orderByDesc("id");
             IPage<TOrderEntity> allPage = this.page(tOrderPage, queryWrapper);

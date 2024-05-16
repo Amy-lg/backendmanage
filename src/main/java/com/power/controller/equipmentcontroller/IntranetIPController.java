@@ -73,7 +73,23 @@ public class IntranetIPController {
             // 通过工具类创建writer
             ExcelWriter writer = ExcelUtil.getWriter(true);
             // 自定义标题别名
-//        writer.addHeaderAlias("projectName", "拨测对象所属项目");
+            writer.addHeaderAlias("sourcePoint", "源点");
+            writer.addHeaderAlias("sourcePointIp", "源点业务IP");
+            writer.addHeaderAlias("sourcePointCity", "源点地市");
+            writer.addHeaderAlias("targetIp", "目的点IP");
+            writer.addHeaderAlias("targetCounty", "目的点地市");
+            writer.addHeaderAlias("dialMethod", "拨测方法");
+            writer.addHeaderAlias("testCycle", "拨测周期");
+            writer.addHeaderAlias("dialResult", "最近一次拨测结果");
+            writer.addHeaderAlias("dialStatus", "拨测状态");
+            writer.addHeaderAlias("taskStatus", "任务状态");
+            writer.addHeaderAlias("projectName", "项目名称");
+            writer.addHeaderAlias("subProjectName", "子项目名称");
+            writer.addHeaderAlias("dialStartTime", "开始拨测时间");
+            writer.addHeaderAlias("dialEndTime", "结束拨测时间");
+            writer.addHeaderAlias("notes", "备注");
+            writer.addHeaderAlias("projectStatus", "项目状态");
+
             writer.write(intranetIPList, true);
             String fileName = "内网IP拨测";
             // 设置导出Excel的文件格式信息

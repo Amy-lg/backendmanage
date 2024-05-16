@@ -7,12 +7,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.entity.User;
 import com.power.entity.dto.NoteInfoEntity;
 import com.power.entity.proactiveservicesentity.VisitingOrderEntity;
 import com.power.entity.proactiveservicesentity.ordertimeentity.OrderDealingTimeEntity;
 import com.power.entity.proactiveservicesentity.visitingfiltersearch.VisitingFilterSearchEntity;
 import com.power.mapper.proactivemapper.VisitingMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -64,6 +66,36 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
         // 搜索功能；查看搜索条件是否为空
         String orderNum = visitingFilterSearch.getOrderNum();
         String visitingProject = visitingFilterSearch.getVisitingProject();
+        String county = visitingFilterSearch.getCounty();
+        String orderStatus = visitingFilterSearch.getOrderStatus();
+
+        // 登录者权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)) {
+                queryWrapper.eq("county", projectCounty);
+                if (!StrUtil.isEmpty(orderNum) || !StrUtil.isEmpty(visitingProject)) {
+                    if (!StrUtil.isBlank(orderNum)) {
+                        queryWrapper.like("order_num", orderNum);
+                    }
+                    if (!StrUtil.isBlank(visitingProject)) {
+                        queryWrapper.like("visiting_project", visitingProject);
+                    }
+                    IPage<VisitingOrderEntity> authoritySearchPage = page(visitingOrderPage, queryWrapper);
+                    return authoritySearchPage;
+                }
+                if (!StrUtil.isEmpty(orderStatus)) {
+                    queryWrapper.eq("order_status", orderStatus);
+                    IPage<VisitingOrderEntity> authorityFilterPage = page(visitingOrderPage, queryWrapper);
+                    return authorityFilterPage;
+                }
+                IPage authorityPage = this.page(visitingOrderPage, queryWrapper);
+                return authorityPage;
+            }
+        }
+
         // 搜搜判断
         if (!StrUtil.isEmpty(orderNum) || !StrUtil.isEmpty(visitingProject)) {
             if (!StrUtil.isEmpty(orderNum)) {
@@ -77,8 +109,6 @@ public class VisitingService extends ServiceImpl<VisitingMapper, VisitingOrderEn
         }
 
         // 筛选判断
-        String county = visitingFilterSearch.getCounty();
-        String orderStatus = visitingFilterSearch.getOrderStatus();
         if (!StrUtil.isEmpty(county) || !StrUtil.isEmpty(orderStatus)) {
             if (!StrUtil.isEmpty(county)) {
                 queryWrapper.eq("county", county);
