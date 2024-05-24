@@ -413,7 +413,10 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
      */
     public int getTOrderOfSum() {
         // 查询所有t工单数量
-        long count = this.count();
+        // todo 去除区县字段值为空的情况
+        QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.isNotNull("county");
+        long count = this.count(queryWrapper);
         return (int) count;
     }
 
@@ -536,6 +539,72 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
         // 存储秀洲南湖
         Map<String, String> xuiZhouMap = new LinkedHashMap<>();
         Map<String, String> nanHuMap = new LinkedHashMap<>();
+
+        // 登录者权限
+        User currentUser = TokenUtils.getCurrentUser();
+        String userRole = currentUser.getRole();
+        if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
+            String projectCounty = currentUser.getProjectCounty();
+            if (!StrUtil.isEmpty(projectCounty)) {
+                Map<String, Object> linkedHashMap = new LinkedHashMap<>();
+                String currentUserCounty = projectCounty.substring(0, 2);
+                for (int i = -5; i <= 0; i++) {
+                    String formatBeforeMonth = CalculateUtils.calcBeforeMonth(i);
+                    // 先查询到前6月份的数据信息
+                    QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.like("dispatch_order_time", formatBeforeMonth);
+                    queryWrapper.and(qw -> {
+                        qw.like("county", projectCounty);
+                    });
+                    List<TOrderEntity> tOrderList = this.list(queryWrapper);
+                    String durOfMonthByCounty = "0.000";
+                    if (!tOrderList.isEmpty()) {
+                        float durationSumByCounty = 0f;
+                        int countOfCounty = tOrderList.size();
+                        for (TOrderEntity tOrder : tOrderList) {
+                            // 每条数据的工单历时
+                            String orderDuration = tOrder.getOrderDuration();
+                            if (!StrUtil.isEmpty(orderDuration)) {
+                                Float faultyDuration = Float.parseFloat(orderDuration);
+                                // 常量区县 = 数据中的区县 ==> 计算故障历时总和
+                                durationSumByCounty += faultyDuration;
+                            }
+                        }
+                        // 计算
+                        durOfMonthByCounty = String.format("%.3f", (durationSumByCounty / (float) countOfCounty));
+                    }
+                    // 存储(南湖+秀洲-->嘉禾)
+                    if (currentUserCounty.equals(ProStaConstant.XIU_ZHOU)) {
+                        xuiZhouMap.put(formatBeforeMonth, durOfMonthByCounty);
+                    }
+                    if (currentUserCounty.equals(ProStaConstant.NAN_HU)) {
+                        nanHuMap.put(formatBeforeMonth, durOfMonthByCounty);
+                    }
+                    linkedHashMap.put(currentUserCounty + ":" + formatBeforeMonth, durOfMonthByCounty);
+                }
+                // 遍历南湖秀洲集合，将值相加
+                if (!xuiZhouMap.isEmpty() && !nanHuMap.isEmpty()) {
+                    for (Map.Entry<String, String> xuiZhouEntry : xuiZhouMap.entrySet()){
+                        String xuiZhouEntryKey = xuiZhouEntry.getKey();
+                        for (Map.Entry<String, String> nanHuEntry : nanHuMap.entrySet()) {
+                            String nanHuEntryKey = nanHuEntry.getKey();
+                            if (xuiZhouEntryKey.equals(nanHuEntryKey)) {
+                                String durOfMonthByNanXui = String.format("%.3f", Float.parseFloat(xuiZhouEntry.getValue()) +
+                                        Float.parseFloat(nanHuEntry.getValue()));
+                                linkedHashMap.put(ProStaConstant.JIA_HE + ":" + nanHuEntryKey, durOfMonthByNanXui);
+                                // 将南湖数据删除
+                                linkedHashMap.remove(ProStaConstant.NAN_HU + ":" + nanHuEntryKey);
+                            }
+                        }
+                    }
+                }
+                storeCalcDataList.add(linkedHashMap);
+            }
+            Map<String, Object> everyMonthOfAveDurationMap = calcAveDurationBefore6Month();
+            storeCalcDataList.add(everyMonthOfAveDurationMap);
+            return storeCalcDataList;
+        }
+
         // 根据区县存储
         for (String constantCounty : ProStaConstant.counties) {
             Map<String, Object> linkedHashMap = new LinkedHashMap<>();
@@ -601,6 +670,19 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
 
 
     /**
+     * 统计区县总数(去除项目区县为空的情况)
+     * @param constantCounty
+     * @return
+     */
+    private int calcCountyCount(String constantCounty) {
+        QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("county", constantCounty);
+        int countCounty = (int) count(queryWrapper);
+        return countCounty;
+    }
+
+
+    /**
      * t工单前12月份每月数量
      * @return
      */
@@ -651,6 +733,7 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
             String lastMonth = CalculateUtils.calcBeforeMonth(i);
             QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
             queryWrapper.like("dispatch_order_time", lastMonth);
+            queryWrapper.isNotNull("county").ne("county", "");
             // 查询出当前月份所有数据
             List<TOrderEntity> currentSearchMonthList = list(queryWrapper);
             String currentMonthAveValue = "0.000";

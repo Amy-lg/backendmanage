@@ -185,7 +185,8 @@ public class ProjectDataInfoService extends ServiceImpl<ProjectDataInfoMapper, P
         if (!StrUtil.isBlank(userRole) && ProStaConstant.MANAGER.equals(userRole)) {
             String projectCounty = currentUser.getProjectCounty();
             if (!StrUtil.isEmpty(projectCounty)) {
-                queryWrapper.eq("county", projectCounty);
+                String currentUserCounty = projectCounty.substring(0, 2);
+                queryWrapper.eq("county", currentUserCounty);
                 if (ictNum != null) {
                     queryWrapper.like("ict_num", ictNum);
                     IPage<ProjectDataInfoEntity> authoritySearchPage = page(dataInfoPage, queryWrapper);
