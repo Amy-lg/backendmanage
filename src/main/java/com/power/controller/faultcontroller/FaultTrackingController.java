@@ -3,11 +3,12 @@ package com.power.controller.faultcontroller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
 import com.power.common.constant.ResultStatusCode;
-import com.power.entity.basic.BasicInfoEntity;
+import com.power.entity.basic.ProjectDataInfoEntity;
 import com.power.entity.fault.FaultTrackingEntity;
 import com.power.entity.fault.filtersearch.FaultFilterSearch;
 import com.power.entity.fault.updateinfo.UpdateFaultTracking;
 import com.power.service.basicservice.ProjectBasicInfoService;
+import com.power.service.basicservice.ProjectDataInfoService;
 import com.power.service.faultservice.FaultTrackingService;
 import com.power.utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,9 @@ public class FaultTrackingController {
     @Autowired
     private ProjectBasicInfoService basicInfoService;
 
+    @Autowired
+    private ProjectDataInfoService projectDataInfoService;
+
 
     /**
      * 数据导入
@@ -40,7 +44,8 @@ public class FaultTrackingController {
         List<Object> importMsgList = new ArrayList<>();
         if (importResult != null) {
             // 县分填充
-            List<BasicInfoEntity> basicInfoEntityList = basicInfoService.list();
+            //List<BasicInfoEntity> basicInfoEntityList = basicInfoService.list();
+            List<ProjectDataInfoEntity> basicInfoEntityList = projectDataInfoService.list();
             faultTrackingService.updateProjectCounty(basicInfoEntityList);
             importMsgList.add(ResultStatusCode.SUCCESS_UPLOAD.getCode());
             importMsgList.add(ResultStatusCode.SUCCESS_UPLOAD.getMsg());

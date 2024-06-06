@@ -8,8 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
 import com.power.entity.User;
-import com.power.entity.basic.BasicInfoEntity;
-import com.power.entity.fileentity.BusinessOrderEntity;
+import com.power.entity.basic.ProjectDataInfoEntity;
 import com.power.entity.fileentity.TOrderEntity;
 import com.power.mapper.filemapper.TOrderFileMapper;
 import com.power.utils.AnalysisExcelUtils;
@@ -462,7 +461,7 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
      * @param basicInfoEntityList
      * @return
      */
-    public List<Map<String, Object>> getTOrderOfBefore6Month(List<BasicInfoEntity> basicInfoEntityList) {
+    public List<Map<String, Object>> getTOrderOfBefore6Month(List<ProjectDataInfoEntity> basicInfoEntityList) {
 
         // T工单匹配区县
         matchingCountyByOrderTheme(basicInfoEntityList);
@@ -500,7 +499,7 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
      * @param basicInfoEntityList 被匹配数据对象
      * @return 返回带区县的T工单
      */
-    private void matchingCountyByOrderTheme(List<BasicInfoEntity> basicInfoEntityList) {
+    private void matchingCountyByOrderTheme(List<ProjectDataInfoEntity> basicInfoEntityList) {
         // 获取全部信息
         List<TOrderEntity> tOrderEntityList = this.list();
         // ArrayList<TOrderEntity> storeNewTOrderList = new ArrayList<>();
@@ -511,8 +510,8 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
                 String tProjectName = StrUtil.subBetween(orderTheme, "嘉兴市-", "-IT故障-:");
                 // 遍历循环项目概况数据，与项目名匹配
                 if (basicInfoEntityList != null && basicInfoEntityList.size() > 0) {
-                    for (BasicInfoEntity basicInfo : basicInfoEntityList) {
-                        String basicInfoIctProjectName = basicInfo.getIctProjectName();
+                    for (ProjectDataInfoEntity basicInfo : basicInfoEntityList) {
+                        String basicInfoIctProjectName = basicInfo.getProjectName();
                         if (!StrUtil.isEmpty(tProjectName) && !StrUtil.isBlank(basicInfoIctProjectName)
                                 && tProjectName.equals(basicInfoIctProjectName)) {
                             // 获取区县名

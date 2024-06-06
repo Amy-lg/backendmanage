@@ -24,10 +24,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 项目数据信息业务层
@@ -186,7 +186,7 @@ public class ProjectDataInfoService extends ServiceImpl<ProjectDataInfoMapper, P
             String projectCounty = currentUser.getProjectCounty();
             if (!StrUtil.isEmpty(projectCounty)) {
                 String currentUserCounty = projectCounty.substring(0, 2);
-                queryWrapper.eq("county", currentUserCounty);
+                queryWrapper.like("county", currentUserCounty);
                 if (ictNum != null) {
                     queryWrapper.like("ict_num", ictNum);
                     IPage<ProjectDataInfoEntity> authoritySearchPage = page(dataInfoPage, queryWrapper);
@@ -312,5 +312,103 @@ public class ProjectDataInfoService extends ServiceImpl<ProjectDataInfoMapper, P
     }
 
 
+    /**
+     * 查询区县在维护的项目数量
+     * @return
+     */
+    public Map<String, Object> getMaintenanceNum() {
 
+        QueryWrapper<ProjectDataInfoEntity> queryWrapper = new QueryWrapper<>();
+        // 获取当前事件
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String currentDate = sdf.format(new Date());
+        queryWrapper.ge("maintenance_end_time", currentDate);
+        // queryWrapper.eq("project_status", ProStaConstant.PRO_MAINTENANCE);
+        // 查询出
+        List<ProjectDataInfoEntity> basicInfoList = list(queryWrapper);
+        String[] counties = ProStaConstant.counties_jx;
+        Map<String, Object> countyNumMap = new HashMap<>();
+        if (basicInfoList != null && basicInfoList.size() != 0) {
+            // 遍历循环区县，计算数量
+            for (String county : counties) {
+                AtomicInteger countyCount = new AtomicInteger(0);
+                basicInfoList.stream().forEach(basicInfo -> {
+                    String countyName = basicInfo.getCounty();
+                    if (!countyName.isBlank()) {
+                        String substringCountyName = countyName.substring(0,2);
+                        if (county.equals(substringCountyName)) {
+                            switch (substringCountyName) {
+                                case ProStaConstant.CUSTOMER :
+                                    // 以原子方式将当前值递增1并在递增后返回新值。它相当于i++操作
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.JIA_HE :
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.PING_HU :
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.JIA_SHAN :
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.TONG_XIANG :
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.HAI_NING :
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.HAI_YAN:
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.NAN_HU:
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.XIU_ZHOU:
+                                    countyCount.incrementAndGet();
+                                    break;
+                                case ProStaConstant.JIA_XING:
+                                    countyCount.incrementAndGet();
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                });
+                countyNumMap.put(county, countyCount.intValue());
+            }
+        }
+        return countyNumMap;
+    }
+
+
+    /**
+     * 纳管率计算
+     * @param county 可变参数，区县名
+     * @return
+     */
+    public List<Long> calculateAcceptRate(String ... county) {
+
+        List<Long> acceptRateList = new ArrayList<>();
+        QueryWrapper<ProjectDataInfoEntity> queryWrapper = new QueryWrapper<>();
+
+        // 项目结束时间之前
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String currentTime = formatter.format(LocalDateTime.now());
+
+        // 根据county是否有值计算区县的纳管率
+        if (county != null && county.length != 0) {
+            queryWrapper.like("county", county[0]);
+        }
+        queryWrapper.ge("maintenance_end_time", currentTime);
+        // 分母（维护 or 维护+质保）
+        queryWrapper.like("maintenance_type", "维护");
+        long denominator = this.count(queryWrapper);
+        acceptRateList.add(denominator);
+        // 分子（是否纳管）
+        queryWrapper.eq("is_accept", true);
+        long numerator = this.count(queryWrapper);
+        acceptRateList.add(numerator);
+        return acceptRateList;
+    }
 }

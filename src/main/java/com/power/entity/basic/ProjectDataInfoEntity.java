@@ -111,5 +111,15 @@ public class ProjectDataInfoEntity implements Serializable {
      */
     @FieldAnnotation("下家联系方式")
     private String nextContactPhone;
+    /**
+     * 维护类型
+     */
+    @FieldAnnotation("维护类型")
+    private String maintenanceType;
+    /**
+     * 是否纳管
+     */
+    @FieldAnnotation("是否纳管")
+    private boolean isAccept;
 
 }

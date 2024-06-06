@@ -3,11 +3,12 @@ package com.power.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.power.common.Result;
 import com.power.common.constant.ProStaConstant;
-import com.power.entity.basic.BasicInfoEntity;
+import com.power.entity.basic.ProjectDataInfoEntity;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.entity.fileentity.TOrderEntity;
 import com.power.service.FaultyOrderService;
 import com.power.service.basicservice.ProjectBasicInfoService;
+import com.power.service.basicservice.ProjectDataInfoService;
 import com.power.service.fileservice.BusinessOrderFileService;
 import com.power.service.fileservice.TOrderFileService;
 import com.power.utils.ResultUtils;
@@ -39,6 +40,9 @@ public class FaultyOrderController {
     // 获取项目概况所有数据，匹配T工单区县
     @Autowired
     private ProjectBasicInfoService basicInfoService;
+
+    @Autowired
+    private ProjectDataInfoService projectDataInfoService;
 
     /**
      * 主页面ECharts故障工单概况-折线图表
@@ -186,7 +190,8 @@ public class FaultyOrderController {
         map.put("业务工单前6月工单统计", busOrderOfBefore6Month);
 
         // 小T工单前6月统计，县分
-        List<BasicInfoEntity> basicInfoEntityList = basicInfoService.list();
+        // List<BasicInfoEntity> basicInfoEntityList = basicInfoService.list();
+        List<ProjectDataInfoEntity> basicInfoEntityList = projectDataInfoService.list();
         List<Map<String, Object>> tOrderOfBefore6Month = tOrderFileService.getTOrderOfBefore6Month(basicInfoEntityList);
         map.put("小T工单前6月工单统计", tOrderOfBefore6Month);
 

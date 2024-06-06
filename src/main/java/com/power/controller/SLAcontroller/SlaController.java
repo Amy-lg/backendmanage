@@ -8,7 +8,7 @@ import com.power.common.Result;
 import com.power.entity.slaentity.SLAFaultyEntity;
 import com.power.entity.slaentity.filter.SlaFaultyFilter;
 import com.power.service.SLAservice.SLAFaultyService;
-import com.power.service.basicservice.ProjectBasicInfoService;
+import com.power.service.basicservice.ProjectDataInfoService;
 import com.power.service.equipmentservice.IndustryVideoService;
 import com.power.service.equipmentservice.IntranetIPService;
 import com.power.service.equipmentservice.PubNetIPService;
@@ -34,8 +34,11 @@ public class SlaController {
     @Autowired
     private SLAFaultyService slaFaultyService;
 
+    // @Autowired
+    // private ProjectBasicInfoService basicInfoService;
+
     @Autowired
-    private ProjectBasicInfoService basicInfoService;
+    private ProjectDataInfoService projectDataInfoService;
 
     // 行业视频
     @Autowired
@@ -70,7 +73,8 @@ public class SlaController {
         String[] denominatorStr = new String[5];
         String[] numeratorStr = new String[5];
         // 1.纳管的分母分子数据信息
-        List<Long> isAcceptRateList = basicInfoService.calculateAcceptRate();
+        // List<Long> isAcceptRateList = basicInfoService.calculateAcceptRate();
+        List<Long> isAcceptRateList = projectDataInfoService.calculateAcceptRate();
 
         // 2.设备在线率的分母分子数据信息
         // 行业视频

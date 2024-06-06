@@ -2,14 +2,13 @@ package com.power.controller.mapcontroller;
 
 import com.power.common.Result;
 import com.power.common.constant.ProStaConstant;
-import com.power.service.basicservice.ProjectBasicInfoService;
+import com.power.service.basicservice.ProjectDataInfoService;
 import com.power.service.equipmentservice.IndustryVideoService;
 import com.power.service.equipmentservice.IntranetIPService;
 import com.power.service.equipmentservice.PubNetIPService;
 import com.power.service.equipmentservice.PubNetWebService;
 import com.power.service.evaluationservice.EvaluationService;
 import com.power.service.fileservice.BusinessOrderFileService;
-import com.power.service.fileservice.TOrderFileService;
 import com.power.utils.CalculateUtils;
 import com.power.utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +31,11 @@ import java.util.Map;
 public class MapController {
 
     // 纳管率
+    // @Autowired
+    // private ProjectBasicInfoService basicInfoService;
+
     @Autowired
-    private ProjectBasicInfoService basicInfoService;
+    private ProjectDataInfoService projectDataInfoService;
 
     // 行业视频
     @Autowired
@@ -117,7 +119,8 @@ public class MapController {
         Long nanHuXuiZhouNumerator = 0L; // 分子
         for (String county : ProStaConstant.counties_rate) {
             // 纳管率
-            List<Long> isAcceptRateOfCounty = basicInfoService.calculateAcceptRate(county);
+            //List<Long> isAcceptRateOfCounty = basicInfoService.calculateAcceptRate(county);
+            List<Long> isAcceptRateOfCounty = projectDataInfoService.calculateAcceptRate(county);
             String rate = "0.00";
             if (isAcceptRateOfCounty != null && isAcceptRateOfCounty.size() == 2) {
                 // 南湖、秀洲算一起 --> 计算结果给到嘉禾

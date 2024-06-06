@@ -5,6 +5,7 @@ import com.power.common.Result;
 import com.power.entity.basic.BasicInfoEntity;
 import com.power.entity.basic.filtersearch.BasicFilterEntity;
 import com.power.service.basicservice.ProjectBasicInfoService;
+import com.power.service.basicservice.ProjectDataInfoService;
 import com.power.utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,9 @@ public class ProjectBasicInfoController {
 
     @Autowired
     private ProjectBasicInfoService basicInfoService;
+
+    @Autowired
+    private ProjectDataInfoService projectDataInfoService;
 
 
     /**
@@ -67,7 +71,8 @@ public class ProjectBasicInfoController {
     @GetMapping("/getMaintenanceNCount")
     public Result getMaintenanceNum() {
 
-        Map<String, Object> maintenanceNumMap = basicInfoService.getMaintenanceNum();
+        // Map<String, Object> maintenanceNumMap = basicInfoService.getMaintenanceNum();
+        Map<String, Object> maintenanceNumMap = projectDataInfoService.getMaintenanceNum();
         if (maintenanceNumMap != null) {
             return ResultUtils.success(maintenanceNumMap);
         }else {
