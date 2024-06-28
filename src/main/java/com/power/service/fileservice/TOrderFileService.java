@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.common.util.CommonUtil;
 import com.power.entity.User;
 import com.power.entity.basic.ProjectDataInfoEntity;
 import com.power.entity.fileentity.TOrderEntity;
@@ -86,7 +87,7 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
                     Sheet sheet = workbook.getSheetAt(i);
                     if (sheet != null) {
                         // 数据标题
-//                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
+                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
                         // 数据总行数
                         int lastRowNum = sheet.getLastRowNum();
                         for (int j = 1; j <= lastRowNum; j++) {
@@ -94,6 +95,7 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
                             tOrderEntity = (TOrderEntity) clazz.getDeclaredConstructor().newInstance();
                             // 获取所有私有属性
                             Field[] tOrderFields = clazz.getDeclaredFields();
+                            List<String> fieldAnnotationList = CommonUtil.getFieldAnnotation(tOrderFields);
                             // 获取各个行实例
                             Row contentRow = sheet.getRow(j);
                             String cellValue = null;
@@ -105,14 +107,26 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
                                 int columnIndex = cell.getColumnIndex() + 2;
                                 switch (cellType) {
                                     case STRING:
-                                        cellValue = cell.getStringCellValue();
-                                        tOrderFields[columnIndex].setAccessible(true);
-                                        tOrderFields[columnIndex].set(tOrderEntity, cellValue);
+                                        String title = excelTitle.get(cell.getColumnIndex());
+                                        for (int k = 0; k < fieldAnnotationList.size(); k++) {
+                                            String fieldAnnotation = fieldAnnotationList.get(k);
+                                            if (!"".equals(fieldAnnotation) && title != null &&
+                                                    title.equals(fieldAnnotation)) {
+                                                cellValue = cell.getStringCellValue();
+                                                tOrderFields[k + 2].setAccessible(true);
+                                                tOrderFields[k + 2].set(tOrderEntity, cellValue);
+                                            }
+                                        }
                                         break;
                                     case NUMERIC:
-                                        cellValue = String.valueOf(cell.getNumericCellValue());
+                                        double date = cell.getNumericCellValue();
+                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                        // Java在读取Excel单元格中日期格式的内容时，会自动将日期格式转换为数字格式；
+                                        // 这里需要将读取到的Excel单元格中的日期格式的数字，转换成日期格式
+                                        Date convertDate = DateUtil.getJavaDate(date);
+                                        String formatDate = sdf.format(convertDate);
                                         tOrderFields[columnIndex].setAccessible(true);
-                                        tOrderFields[columnIndex].set(tOrderEntity, cellValue);
+                                        tOrderFields[columnIndex].set(tOrderEntity, formatDate);
                                         break;
                                     case BOOLEAN:
                                         tOrderFields[columnIndex].setAccessible(true);
@@ -246,7 +260,8 @@ public class TOrderFileService extends ServiceImpl<TOrderFileMapper, TOrderEntit
 
         IPage<TOrderEntity> tOrderPage = new Page<>(pageNum, pageSize);
         QueryWrapper<TOrderEntity> queryWrapper = new QueryWrapper<>();
-
+        // 根据工单派发时间倒叙显示
+        queryWrapper.orderByDesc("dispatch_order_time");
         // 管理员权限
         User currentUser = TokenUtils.getCurrentUser();
         String userRole = currentUser.getRole();

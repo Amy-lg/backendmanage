@@ -98,7 +98,14 @@ public class ProjectDataInfoService extends ServiceImpl<ProjectDataInfoMapper, P
                                                     && title != null && title.equals(fieldAnnotation)) {
                                                 cellValue = cell.getStringCellValue();
                                                 projectDataInfoFields[k + 2].setAccessible(true);
-                                                projectDataInfoFields[k + 2].set(projectDataInfo, cellValue);
+                                                if (cellValue.equals(ProStaConstant.IS_YES)) {
+                                                    projectDataInfoFields[k + 2].set(projectDataInfo, true);
+                                                } else if (cellValue.equals(ProStaConstant.IS_NO)) {
+                                                    projectDataInfoFields[k + 2].set(projectDataInfo, false);
+                                                } else {
+                                                    projectDataInfoFields[k + 2].set(projectDataInfo, cellValue);
+                                                }
+                                                // projectDataInfoFields[k + 2].set(projectDataInfo, cellValue);
                                             }
                                         }
                                         break;

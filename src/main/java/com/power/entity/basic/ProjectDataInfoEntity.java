@@ -65,12 +65,12 @@ public class ProjectDataInfoEntity implements Serializable {
      * 转维状态
      */
     @FieldAnnotation("转维状态")
-    private String transferStatus;
+    private boolean transferStatus;
     /**
      * 维护或质保是否到期
      */
     @FieldAnnotation("维护或质保是否到期")
-    private String warrantyIsEnd;
+    private boolean warrantyIsEnd;
     /**
      * 总维护费
      */

@@ -215,6 +215,20 @@ public class CalculateUtils {
     }
 
 
+    /**
+     * 计算当前年份
+     * @return
+     */
+    public static String calcCurrentYear() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        Date beforeMonth = calendar.getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+        String formatBeforeMonth = sdf.format(beforeMonth);
+        return formatBeforeMonth;
+    }
+
+
     // 集合计算公共方法
     public static Map<String, Object> calcMapByEntryKey(Map<String, String> map1, Map<String, String> map2) {
 

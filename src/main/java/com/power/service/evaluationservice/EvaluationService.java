@@ -13,6 +13,7 @@ import com.power.entity.evaluation.EvaluationEntity;
 import com.power.entity.evaluation.searchfilter.EvalSearchFilterEntity;
 import com.power.mapper.evaluationmapper.EvaluationMapper;
 import com.power.utils.AnalysisExcelUtils;
+import com.power.utils.CalculateUtils;
 import com.power.utils.TokenUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
@@ -54,10 +55,13 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
     public List<Map<String, String>> calcAverScoreAndCount() {
 
         ArrayList<Map<String, String>> calcResultList = new ArrayList<>();
+        // 日历当前年份获取
+        String currentYear = CalculateUtils.calcCurrentYear();
         // 区县满意度数量
-        for (String county : ProStaConstant.counties) {
+        for (String county : ProStaConstant.counties_jx) {
             Map<String, String> satisfiedMap = new HashMap<>();
             QueryWrapper<EvaluationEntity> queryWrapper = new QueryWrapper<>();
+            queryWrapper.like("revisiting_time", currentYear);
             queryWrapper.eq("county", county);
             queryWrapper.isNotNull("service_satisfaction").ne("service_satisfaction", "");
             // 区县总数(只统计有分数的)
@@ -73,17 +77,25 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
             } else {
                 rate = "0.00";
             }
-            satisfiedMap.put("区县", county);
-            satisfiedMap.put("满意数", String.valueOf(satisfiedCount));
-            satisfiedMap.put("平均分", rate);
+            // 嘉兴满意度--->要客
+            if (county.equals(ProStaConstant.JIA_XING)) {
+                satisfiedMap.put("区县", ProStaConstant.CUSTOMER);
+                satisfiedMap.put("满意数", String.valueOf(satisfiedCount));
+                satisfiedMap.put("平均分", rate);
+            }else {
+                satisfiedMap.put("区县", county);
+                satisfiedMap.put("满意数", String.valueOf(satisfiedCount));
+                satisfiedMap.put("平均分", rate);
+            }
 
             calcResultList.add(satisfiedMap);
         }
         // 区县非满意度数量
         int indexCount = 0;
-        for (String county : ProStaConstant.counties) {
+        for (String county : ProStaConstant.counties_jx) {
             QueryWrapper<EvaluationEntity> queryWrapper = new QueryWrapper<>();
             // 条件
+            queryWrapper.like("revisiting_time", currentYear);
             queryWrapper.eq("county", county);
             queryWrapper.isNotNull("service_satisfaction").ne("service_satisfaction","");
             queryWrapper.ne("service_satisfaction", 10);

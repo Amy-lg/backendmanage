@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.power.common.constant.ProStaConstant;
 import com.power.common.constant.ResultStatusCode;
+import com.power.common.util.CommonUtil;
 import com.power.entity.User;
 import com.power.entity.fileentity.BusinessOrderEntity;
 import com.power.mapper.filemapper.BusinessOrderFileMapper;
@@ -63,6 +64,7 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
         IPage<BusinessOrderEntity> businessOrderPage = new Page<>(pageNum, pageSize);
         QueryWrapper<BusinessOrderEntity> queryWrapper = new QueryWrapper<>();
 
+        queryWrapper.orderByDesc("faulty_time");
         // 管理员
         // 登录人员权限限制问题（只显示登录人员自己所在区县的数据）
         User currentUser = TokenUtils.getCurrentUser();
@@ -250,7 +252,7 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
                     Sheet sheet = workbook.getSheetAt(i);
                     if (sheet != null) {
                         // 数据标题
-//                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
+                        List<String> excelTitle = AnalysisExcelUtils.getExcelTitle(sheet);
                         // 数据总行数
                         int lastRowNum = sheet.getLastRowNum();
                         for (int j = 1; j <= lastRowNum; j++) {
@@ -258,6 +260,7 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
                             businessOrder = (BusinessOrderEntity) clazz.getDeclaredConstructor().newInstance();
                             // 获取所有私有属性
                             Field[] bOrderFields = clazz.getDeclaredFields();
+                            List<String> fieldAnnotationList = CommonUtil.getFieldAnnotation(bOrderFields);
                             // 获取各个行实例
                             Row contentRow = sheet.getRow(j);
                             String cellValue = null;
@@ -269,14 +272,26 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
                                 int columnIndex = cell.getColumnIndex() + 2;
                                 switch (cellType) {
                                     case STRING:
-                                        cellValue = cell.getStringCellValue();
-                                        bOrderFields[columnIndex].setAccessible(true);
-                                        bOrderFields[columnIndex].set(businessOrder, cellValue);
+                                        String title = excelTitle.get(cell.getColumnIndex());
+                                        for (int k = 0; k < fieldAnnotationList.size(); k++) {
+                                            String fieldAnnotation = fieldAnnotationList.get(k);
+                                            if (!"".equals(fieldAnnotation) && title != null
+                                                    && title.equals(fieldAnnotation)) {
+                                                cellValue = cell.getStringCellValue();
+                                                bOrderFields[k + 2].setAccessible(true);
+                                                bOrderFields[columnIndex].set(businessOrder, cellValue);
+                                            }
+                                        }
                                         break;
                                     case NUMERIC:
-                                        cellValue = String.valueOf(cell.getNumericCellValue());
+                                        double date = cell.getNumericCellValue();
+                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                        // Java在读取Excel单元格中日期格式的内容时，会自动将日期格式转换为数字格式；
+                                        // 这里需要将读取到的Excel单元格中的日期格式的数字，转换成日期格式
+                                        Date convertDate = DateUtil.getJavaDate(date);
+                                        String formatDate = sdf.format(convertDate);
                                         bOrderFields[columnIndex].setAccessible(true);
-                                        bOrderFields[columnIndex].set(businessOrder, cellValue);
+                                        bOrderFields[columnIndex].set(businessOrder, formatDate);
                                         break;
                                     case BOOLEAN:
                                         bOrderFields[columnIndex].setAccessible(true);
@@ -293,7 +308,7 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
                                         break;
                                     case BLANK:
                                         bOrderFields[columnIndex].setAccessible(true);
-                                        cellValue = "";
+                                        bOrderFields[columnIndex].set(businessOrder, "");
                                         break;
                                     case ERROR:
 //                                        byte errorCellValue = cell.getErrorCellValue();
