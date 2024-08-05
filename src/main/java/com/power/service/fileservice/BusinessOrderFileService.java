@@ -284,14 +284,35 @@ public class BusinessOrderFileService extends ServiceImpl<BusinessOrderFileMappe
                                         }
                                         break;
                                     case NUMERIC:
-                                        double date = cell.getNumericCellValue();
+                                        /*double date = cell.getNumericCellValue();
                                         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                                         // Java在读取Excel单元格中日期格式的内容时，会自动将日期格式转换为数字格式；
                                         // 这里需要将读取到的Excel单元格中的日期格式的数字，转换成日期格式
                                         Date convertDate = DateUtil.getJavaDate(date);
                                         String formatDate = sdf.format(convertDate);
                                         bOrderFields[columnIndex].setAccessible(true);
-                                        bOrderFields[columnIndex].set(businessOrder, formatDate);
+                                        bOrderFields[columnIndex].set(businessOrder, formatDate);*/
+                                        String numTitle = excelTitle.get(cell.getColumnIndex());
+                                        if (!numTitle.contains("时间")) {
+                                            for (int k = 0; k < fieldAnnotationList.size(); k++) {
+                                                String fieldAnnotation = fieldAnnotationList.get(k);
+                                                if (!"".equals(fieldAnnotation) && numTitle.equals(fieldAnnotation)) {
+                                                    double numericCellValue = cell.getNumericCellValue();
+                                                    cellValue = String.valueOf(numericCellValue);
+                                                    bOrderFields[columnIndex].setAccessible(true);
+                                                    bOrderFields[columnIndex].set(businessOrder, cellValue);
+                                                }
+                                            }
+                                        } else {
+                                            double date = cell.getNumericCellValue();
+                                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                            // Java在读取Excel单元格中日期格式的内容时，会自动将日期格式转换为数字格式；
+                                            // 这里需要将读取到的Excel单元格中的日期格式的数字，转换成日期格式
+                                            Date convertDate = DateUtil.getJavaDate(date);
+                                            String formatDate = sdf.format(convertDate);
+                                            bOrderFields[columnIndex].setAccessible(true);
+                                            bOrderFields[columnIndex].set(businessOrder, formatDate);
+                                        }
                                         break;
                                     case BOOLEAN:
                                         bOrderFields[columnIndex].setAccessible(true);

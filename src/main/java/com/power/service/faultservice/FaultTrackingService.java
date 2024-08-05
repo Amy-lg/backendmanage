@@ -176,6 +176,7 @@ public class FaultTrackingService extends ServiceImpl<FaultTrackingMapper, Fault
             String currentUserCounty = currentUser.getProjectCounty();
             if (!StrUtil.isEmpty(currentUserCounty)) {
                 queryWrapper.eq("project_county", currentUserCounty);
+                queryWrapper.orderByDesc("update_time");
                 if (StringUtils.hasLength(projectName) || StringUtils.hasText(targetIp)) {
                     if (projectName != null && !"".equals(projectName)) {
                         queryWrapper.like("project_name", projectName);
@@ -196,6 +197,7 @@ public class FaultTrackingService extends ServiceImpl<FaultTrackingMapper, Fault
             }
         }
 
+        queryWrapper.orderByDesc("update_time");
         if (StringUtils.hasLength(projectName) || StringUtils.hasText(targetIp)) {
             if (projectName != null && !"".equals(projectName)) {
                 queryWrapper.like("project_name", projectName);

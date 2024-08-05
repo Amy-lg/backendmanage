@@ -39,10 +39,16 @@ public class EvaluationService extends ServiceImpl<EvaluationMapper, EvaluationE
 
         if (file != null) {
             List<EvaluationEntity> evaluationList = this.importData(file);
-            if (evaluationList != null && evaluationList.size() != 0) {
-                this.saveBatch(evaluationList, 100);
-                return ResultStatusCode.SUCCESS_UPLOAD.toString();
+            for (EvaluationEntity evaluation : evaluationList) {
+                QueryWrapper<EvaluationEntity> queryWrapper = new QueryWrapper<>();
+                String projectNum = evaluation.getProjectNum();
+                queryWrapper.eq("project_num", projectNum);
+                saveOrUpdate(evaluation,queryWrapper);
             }
+            /*if (evaluationList != null && evaluationList.size() != 0) {
+                this.saveBatch(evaluationList, 100);
+            }*/
+            return ResultStatusCode.SUCCESS_UPLOAD.toString();
         }
         return null;
     }
